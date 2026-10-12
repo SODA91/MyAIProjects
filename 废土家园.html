@@ -1,0 +1,2187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>废土家园 · 丧尸生存塔防</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#0a0d12;color:#d7dee8;font-family:"Microsoft YaHei","PingFang SC",sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+#wrap{position:relative;width:min(1280px,100vw);margin:0 auto}
+canvas#game{display:block;width:100%;background:#000;cursor:crosshair}
+#dayline{position:absolute;top:6px;left:50%;transform:translateX(-50%);background:rgba(10,14,20,.78);border:1px solid #2a3442;border-radius:6px;padding:3px 12px;font-size:13px;pointer-events:none;white-space:nowrap}
+#msgs{position:absolute;top:34px;left:10px;pointer-events:none;font-size:12px;color:#cfe0c0;text-shadow:1px 1px 2px #000}
+#msgs div{margin:2px 0}
+#bbar{position:absolute;left:8px;bottom:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-start;align-items:center;max-width:96%}
+#bbar button{background:rgba(16,22,32,.88);color:#d7dee8;border:1px solid #33404f;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap}
+#bbar button:hover{border-color:#5a7f5a}
+#bbar button.sel{background:#2c4430;border-color:#7fbf7f;color:#eaffea}
+#bbar button.off{opacity:.45}
+#bbar button.act{background:#3a2c22}
+#bbar button.big{font-size:18px;font-weight:bold;padding:14px 22px;background:rgba(24,36,52,.96);border:2px solid #7fa3c8;border-radius:10px;box-shadow:0 0 10px rgba(120,180,255,.35);animation:btnGlow 2.2s ease-in-out infinite}
+#bbar button.big:hover{border-color:#9fdc9f;color:#eaffea;box-shadow:0 0 16px rgba(150,220,150,.55)}
+@keyframes btnGlow{0%,100%{box-shadow:0 0 8px rgba(120,180,255,.3)}50%{box-shadow:0 0 18px rgba(140,200,255,.6)}}
+.pop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,8,12,.65);z-index:4}
+.pop.hidden{display:none}
+.pop-inner{background:#10161f;border:1px solid #33404f;border-radius:10px;padding:16px 20px;width:560px;max-width:94%;max-height:90vh;overflow:auto}
+.pop-head{display:flex;justify-content:space-between;align-items:center;font-size:17px;color:#ffd76a;margin-bottom:10px}
+.pop-head button{background:#1d2a3a;color:#e8f0f8;border:1px solid #44586c;border-radius:5px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:inherit}
+.pop-body p{font-size:13px;color:#c3ccd6;line-height:1.7;margin:4px 0}
+.pop-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;justify-content:center}
+.pop-btns button{background:#1d2a3a;color:#e8f0f8;border:1px solid #44586c;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;font-family:inherit}
+.pop-btns button:hover{background:#29405a}
+.pop-btns button.off{opacity:.4}
+.pop-btns button.warn{background:#4a2c22;border-color:#8a5a44}
+.build-item{display:flex;justify-content:space-between;align-items:center;background:#151c28;border:1px solid #33404f;border-radius:6px;padding:8px 12px;margin:6px 0;cursor:pointer;font-size:14px;color:#d7dee8;width:100%;font-family:inherit}
+.build-item:hover{border-color:#7fbf7f}
+.build-item.off{opacity:.45}
+.bp-craft{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;justify-content:center}
+.bp-craft button{background:#1d2a3a;color:#e8f0f8;border:1px solid #44586c;border-radius:5px;padding:4px 9px;font-size:12px;cursor:pointer;font-family:inherit}
+.bp-craft button:hover{background:#29405a}
+.bp-craft button.off{opacity:.4}
+.cgrid{display:grid;grid-template-columns:repeat(8,52px);gap:6px;justify-content:center;margin:6px 0}
+.clbl{font-size:12px;color:#9fb4c8;text-align:center;margin-top:8px}
+#tip{position:absolute;bottom:56px;left:50%;transform:translateX(-50%);font-size:12px;color:#9fb4c8;background:rgba(10,14,20,.6);padding:2px 10px;border-radius:5px;pointer-events:none;white-space:nowrap}
+#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,8,12,.82);z-index:5}
+#overlay.hidden{display:none}
+#bpanel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,8,12,.6);z-index:4}
+#bpanel.hidden{display:none}
+#bpanel-inner{background:#10161f;border:1px solid #33404f;border-radius:10px;padding:16px 20px;width:520px;max-width:94%}
+#bp-head{display:flex;justify-content:space-between;align-items:center;font-size:17px;color:#ffd76a;margin-bottom:10px}
+#bp-head button{background:#1d2a3a;color:#e8f0f8;border:1px solid #44586c;border-radius:5px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:inherit}
+#bp-equip{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+#bp-equip .lbl{font-size:12px;color:#9fb4c8}
+.bpslot{width:52px;height:52px;border:1px solid #33404f;border-radius:6px;background:#151c28;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+.bpslot .ic{font-size:22px;line-height:1}
+.bpslot .n{font-size:11px;color:#9fb4c8;line-height:1.2}
+.bpslot.eq{outline:2px solid #ffd76a;outline-offset:-1px}
+.bpslot:hover{border-color:#5a7f5a}
+.bpslot.empty{opacity:.35;cursor:default}
+#bp-grid{display:grid;grid-template-columns:repeat(8,52px);gap:6px;justify-content:center}
+#bp-info{font-size:12px;color:#9fb4c8;margin-top:10px;min-height:16px;text-align:center}
+#panel{max-width:660px;width:92%;background:#10161f;border:1px solid #33404f;border-radius:10px;padding:22px 26px;max-height:90vh;overflow:auto}
+#panel h1{font-size:26px;color:#ffd76a;margin-bottom:6px;text-align:center}
+#panel h2{font-size:15px;color:#9fc3ff;margin:14px 0 6px}
+#panel p,#panel li{font-size:13px;line-height:1.7;color:#c3ccd6}
+#panel .btns{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+#panel button{background:#1d2a3a;color:#e8f0f8;border:1px solid #44586c;border-radius:6px;padding:9px 18px;font-size:15px;cursor:pointer;font-family:inherit}
+#panel button:hover{background:#29405a}
+#panel button.primary{background:#2c4a2e;border-color:#5f9a63}
+#panel button.primary:hover{background:#3a613d}
+kbd{background:#1a2230;border:1px solid #3a4a5c;border-radius:4px;padding:1px 5px;font-size:12px}
+</style>
+</head>
+<body>
+<div id="wrap">
+<canvas id="game" width="1280" height="720"></canvas>
+<div id="dayline">第 1 天 · 白天</div>
+<div id="msgs"></div>
+<div id="bbar"></div>
+<div id="tip"></div>
+<div id="overlay"><div id="panel"></div></div>
+<div id="bpanel" class="hidden">
+  <div id="bpanel-inner">
+    <div id="bp-head"><span>🎒 背包</span><button id="bp-close" onclick="toggleBackpack()">✕ 关闭 [B]</button></div>
+    <div id="bp-equip"></div>
+    <div id="bp-grid"></div>
+    <div id="bp-info"></div>
+  </div>
+</div>
+<div id="infopanel" class="pop hidden"><div class="pop-inner" id="infopanel-inner"></div></div>
+<div id="buildpanel" class="pop hidden"><div class="pop-inner" id="buildpanel-inner"></div></div>
+<div id="chestpanel" class="pop hidden"><div class="pop-inner" id="chestpanel-inner"></div></div>
+</div>
+<script>
+'use strict';
+/* ================================================================
+   废土家园 —— 2D 丧尸末日：模拟经营 + 塔防 + 开放世界探索
+   单文件 HTML5 Canvas 游戏，无外部依赖，双击即可游玩。
+   ================================================================ */
+
+// ---------- 常量 ----------
+const W2=1280, H2=720, TS=32, TW=160, TH=160, W=TW*TS, H=TH*TS;
+const T_GRASS=0, T_FOREST=1, T_WATER=2, T_ROAD=3, T_RUIN=4, T_SAND=5;
+const PASS=[true,true,false,true,true,true];
+const DAY_LEN=100, NIGHT_LEN=70, ZCAP=250, SAVE_KEY='wfh_save_v1';
+const BASE={x:80,y:66};
+
+// ---------- 全局状态 ----------
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+let tiles=new Uint8Array(TW*TH), fog=new Uint8Array(TW*TH), dist=new Uint16Array(TW*TH);
+const objs=new Map();      // 地图物件：树/岩石/废料/箱子/巢穴
+const blds=new Map();      // 建筑
+const zombies=[], bullets=[], parts=[], texts=[];
+let survivors=[];
+const keys={};
+const mouse={x:640,y:360,down:false};
+let cam={x:0,y:0};
+let player=null;
+let bp=[], equip={gun:null,melee:null}, bpOpen=false;
+let panelInfo=null, panelSurv=null, panelChest=null, buildPanelOpen=false;
+let day=1, tod=0, timeScale=1, paused=false, state='menu';
+let nightStarted=false, nightWarned=false;
+let spawnList=[], si=0;
+let kills=0, nestsTotal=0, nestsDestroyed=0, cratesOpened=0;
+let distDirty=true, distTimer=0;
+let buildType=null, demolish=false;
+let interactCd=0, fireCd=0, meleeCd=0, medCd=0, lowAmmoT=0, turretSndT=0, foodT=0, coreSndT=0, hurtSndT=0;
+let shake=0, hurtT=0, startT=0, gameT=0, lastT=0;
+let tuts=[], msgs=[];
+let coreRef=null;
+let actBtns=[];
+let mmImg=null, mmFrame=0, lightCv=null, lightCtx=null;
+
+// ---------- 工具 ----------
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+function lerp(a,b,t){return a+(b-a)*t;}
+function rnd(){rngState^=rngState<<13;rngState^=rngState>>>17;rngState^=rngState<<5;return ((rngState>>>0)/4294967296);}
+function rndInt(a,b){return a+Math.floor(rnd()*(b-a+1));}
+function rndPick(arr){return arr[Math.floor(rnd()*arr.length)];}
+function hash2(x,y,seed){let h=x*374761393+y*668265263+(seed|0)*974634321;h=(h^(h>>>13))*1274126177;h=(h^(h>>>16))>>>0;return h/4294967296;}
+let rngState=20240607;
+function makeNoise(seed){
+  return function(x,y){
+    const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
+    const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+    const a=hash2(xi,yi,seed),b=hash2(xi+1,yi,seed),c=hash2(xi,yi+1,seed),d=hash2(xi+1,yi+1,seed);
+    return (a*(1-u)+b*u)*(1-v)+(c*(1-u)+d*u)*v;
+  };
+}
+function $(id){return document.getElementById(id);}
+function setText(id,s){const el=$(id);if(el&&el.textContent!==s)el.textContent=s;}
+function addMsg(t){msgs.push({txt:t,age:0});if(msgs.length>8)msgs.shift();}
+
+// ---------- 建筑与物件定义 ----------
+const BLD_DEFS={
+  core:{name:'家园核心',hp:500,repair:{mat:'metal',per:100}},
+  wall_wood:{name:'木墙',cost:{wood:2},hp:80,repair:{mat:'wood',per:40}},
+  wall_stone:{name:'石墙',cost:{stone:3},hp:200,repair:{mat:'stone',per:40}},
+  spike:{name:'尖刺陷阱',cost:{wood:2},hp:40,repair:{mat:'wood',per:20}},
+  turret:{name:'哨戒塔',cost:{wood:5,metal:3},hp:120,repair:{mat:'wood',per:30}},
+  furnace:{name:'熔炉',cost:{stone:6,wood:4},hp:100,repair:{mat:'stone',per:20}},
+  farm:{name:'农田',cost:{wood:2},hp:60,repair:{mat:'wood',per:30}},
+  bed:{name:'床',cost:{wood:3},hp:60,repair:{mat:'wood',per:30}},
+  door:{name:'门',cost:{wood:2},hp:100,repair:{mat:'wood',per:50}},
+  chest:{name:'箱子',cost:{wood:4},hp:80,repair:{mat:'wood',per:20}},
+};
+const BUILD_ORDER=['wall_wood','wall_stone','spike','turret','furnace','farm','bed','door','chest'];
+const ZTYPES={
+  walker:{hp:22,sp:1.6,dmg:5,bdmg:6,atkInt:0.8,rad:0.30,color:'#4a7a3a'},
+  runner:{hp:13,sp:3.1,dmg:4,bdmg:4,atkInt:0.6,rad:0.24,color:'#7a9a3a'},
+  brute:{hp:120,sp:1.05,dmg:14,bdmg:22,atkInt:1.1,rad:0.48,color:'#5a2a2a'},
+};
+
+// ---------- 物品与背包 ----------
+const ITEMS={
+  wood:{name:'木材',icon:'🪵',stack:99},
+  stone:{name:'石头',icon:'🪨',stack:99},
+  metal:{name:'金属',icon:'⚙️',stack:99},
+  food:{name:'食物',icon:'🍖',stack:99},
+  ammo:{name:'弹药',icon:'🔫',stack:99},
+  seeds:{name:'种子',icon:'🌱',stack:99},
+  medkit:{name:'绷带',icon:'🩹',stack:99},
+  pistol:{name:'手枪',icon:'🔫',stack:1,kind:'gun',dmg:12,desc:'远程武器，消耗弹药'},
+  machete:{name:'砍刀',icon:'🗡️',stack:1,kind:'melee',dmg:25,desc:'近战武器，伤害高'},
+  bat:{name:'棒球棍',icon:'🏏',stack:1,kind:'melee',dmg:18,desc:'近战武器（3木材合成）'},
+};
+function invCount(id){let n=0;for(const s of bp)if(s.id===id)n+=s.n;return n;}
+function invAdd(id,n){
+  if(n<=0)return 0;
+  const def=ITEMS[id];let left=n;
+  for(const s of bp){if(left<=0)break;if(s.id===id&&s.n<def.stack){const a=Math.min(left,def.stack-s.n);s.n+=a;left-=a;}}
+  for(const s of bp){if(left<=0)break;if(s.id===null){const a=Math.min(left,def.stack);s.id=id;s.n=a;left-=a;}}
+  return left;
+}
+function invRemove(id,n){
+  if(invCount(id)<n)return false;
+  let left=n;
+  for(let i=bp.length-1;i>=0&&left>0;i--){
+    const s=bp[i];
+    if(s.id===id){const t=Math.min(left,s.n);s.n-=t;left-=t;if(s.n<=0){s.id=null;s.n=0;}}
+  }
+  return true;
+}
+function canAfford(cost){for(const k in cost)if(invCount(k)<cost[k])return false;return true;}
+function payCost(cost){for(const k in cost)invRemove(k,cost[k]);}
+function invAddMsg(id,n){
+  const left=invAdd(id,n);
+  if(left>0)addMsg('⚠️ 背包已满，部分 '+ITEMS[id].name+' 丢失！');
+  return left;
+}
+function meleeDmg(){return (equip.melee&&invCount(equip.melee)>0)?ITEMS[equip.melee].dmg:8;}
+
+// ---------- 音频（WebAudio 合成，无素材文件） ----------
+let AC=null;
+function audio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}return AC;}
+function snd(freq,dur,type,vol,slide){
+  const ac=audio();if(!ac)return;
+  try{
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.type=type||'square';
+    o.frequency.setValueAtTime(freq,ac.currentTime);
+    if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,freq+slide),ac.currentTime+dur);
+    g.gain.setValueAtTime(vol||0.05,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+dur);
+    o.connect(g);g.connect(ac.destination);
+    o.start();o.stop(ac.currentTime+dur);
+  }catch(e){}
+}
+const SND={
+  shoot:()=>snd(320,0.07,'square',0.04,-220),
+  hit:()=>snd(120,0.08,'sawtooth',0.05,-60),
+  chop:()=>snd(220,0.05,'square',0.05,-80),
+  pick:()=>snd(600,0.05,'triangle',0.06,200),
+  place:()=>snd(150,0.1,'square',0.06,-50),
+  horn:()=>snd(90,0.9,'sawtooth',0.07,0),
+  night:()=>snd(70,1.4,'sine',0.06,-10),
+  boom:()=>snd(60,0.35,'sawtooth',0.09,-35),
+  hurt:()=>snd(160,0.12,'square',0.07,-90),
+  eat:()=>snd(500,0.06,'triangle',0.05,150),
+};
+
+// ---------- 世界生成 ----------
+function setT(x,y,t){if(x<0||y<0||x>=TW||y>=TH)return;tiles[y*TW+x]=t;}
+function addObj(x,y,type){if(x<0||y<0||x>=TW||y>=TH)return;const i=y*TW+x;if(objs.has(i))return;objs.set(i,{type,x,y,hp:type==='nest'?150:(type==='tree'?3:(type==='rock'?4:1)),flash:0,spawnCd:4});}
+function isBldSolid(b){
+  if(!b)return false;
+  if(b.type==='core'||b.type==='spike'||b.type==='farm')return false;
+  if(b.type==='door')return !b.open;
+  return true;
+}
+function walkableAt(x,y){if(x<0||y<0||x>=TW||y>=TH)return false;const i=y*TW+x;if(!PASS[tiles[i]])return false;const b=blds.get(i);if(isBldSolid(b))return false;const o=objs.get(i);if(o&&(o.type==='tree'||o.type==='rock'))return false;return true;}
+function walkableS(x,y){if(x<0||y<0||x>=TW||y>=TH)return false;const i=y*TW+x;if(!PASS[tiles[i]])return false;const b=blds.get(i);if(b&&b.type!=='core'&&b.type!=='spike'&&b.type!=='farm'&&b.type!=='door')return false;const o=objs.get(i);if(o&&(o.type==='tree'||o.type==='rock'))return false;return true;}
+function findWalkableNear(x,y,maxR){
+  if(walkableAt(x,y))return{x:x,y:y};
+  for(let r=1;r<=maxR;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+    if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+    const nx=x+dx,ny=y+dy;
+    if(nx<0||ny<0||nx>=TW||ny>=TH)continue;
+    if(walkableAt(nx,ny))return{x:nx,y:ny};
+  }
+  return null;
+}
+function genWorld(){
+  tiles.fill(T_GRASS);objs.clear();blds.clear();
+  const n1=makeNoise(7),n2=makeNoise(99);
+  for(let y=0;y<TH;y++)for(let x=0;x<TW;x++){
+    const e1=n1(x*0.045,y*0.045),e2=n2(x*0.05,y*0.05);
+    let t=T_GRASS;
+    if(e1>0.52)t=T_FOREST;
+    if(e2<-0.62)t=T_WATER;
+    if(t===T_GRASS&&e2<-0.56)t=T_SAND;
+    setT(x,y,t);
+  }
+  carveTown();
+  // 散落资源
+  for(let y=0;y<TH;y++)for(let x=0;x<TW;x++){
+    const i=y*TW+x,t=tiles[i];
+    if(t===T_FOREST&&rnd()<0.82)addObj(x,y,'tree');
+    else if(t===T_GRASS&&rnd()<0.016)addObj(x,y,'rock');
+  }
+  // 野外零星箱子
+  for(let k=0;k<6;k++){const p=findWalkableNear(rndInt(6,TW-7),rndInt(6,TH-7),6);if(p&&Math.hypot(p.x-BASE.x,p.y-BASE.y)>14)addObj(p.x,p.y,'crate');}
+  // 基地清理
+  for(let y=BASE.y-9;y<=BASE.y+9;y++)for(let x=BASE.x-9;x<=BASE.x+9;x++){
+    const i=y*TW+x;setT(x,y,T_GRASS);const o=objs.get(i);if(o)objs.delete(i);
+  }
+  // 巢穴 ×4
+  const nestPos=[[48,46],[48,102],[116,46],[116,102]];
+  nestsTotal=0;
+  for(const p of nestPos){
+    const n=findNestSpot(p[0],p[1]);
+    if(n){addObj(n.x,n.y,'nest');nestsTotal++;}
+  }
+  if(nestsTotal<4){ // 兜底：全图找离基地最远的可通行点
+    let best=null,bd=-1;
+    for(let y=2;y<TH-2;y++)for(let x=2;x<TW-2;x++){
+      if(!walkableAt(x,y)||objs.has(y*TW+x))continue;
+      const d=(x-BASE.x)*(x-BASE.x)+(y-BASE.y)*(y-BASE.y);
+      if(d>bd){bd=d;best={x,y};}
+    }
+    if(best){addObj(best.x,best.y,'nest');nestsTotal++;}
+  }
+  // 幸存者（小镇道路上的可招募 NPC）
+  survivors=[
+    {x:127.5,y:87.5,hp:80,maxhp:80,recruited:false,alive:true,atkCd:0,flash:0,ang:0,name:'老周',mode:'follow',inv:{wood:0,stone:0,metal:0},path:null,pathT:0,tgtIdx:null,patrolP:null,sleeping:false,doorCd:0,deposited:false,warnT:0},
+    {x:113.5,y:87.5,hp:80,maxhp:80,recruited:false,alive:true,atkCd:0,flash:0,ang:0,name:'阿梅',mode:'follow',inv:{wood:0,stone:0,metal:0},path:null,pathT:0,tgtIdx:null,patrolP:null,sleeping:false,doorCd:0,deposited:false,warnT:0},
+  ];
+  for(const s of survivors){const p=findWalkableNear(Math.floor(s.x),Math.floor(s.y),5);if(p){s.x=p.x+0.5;s.y=p.y+0.5;}}
+}
+function carveTown(){
+  const tx=92,ty=68,w=52,h=38;
+  const ry=ty+Math.floor(h/2),rx=tx+Math.floor(w/2);
+  for(let x=tx;x<tx+w;x++){setT(x,ry,T_ROAD);setT(x,ry+1,T_ROAD);}
+  for(let y=ty;y<ty+h;y++){setT(rx,y,T_ROAD);setT(rx+1,y,T_ROAD);}
+  const bw=10,bh=10,gap=2;
+  for(let gx=0;gx<4;gx++)for(let gy=0;gy<3;gy++){
+    const bx=tx+2+gx*(bw+gap),by=ty+2+gy*(bh+gap);
+    if(bx+bw>tx+w-2||by+bh>ty+h-2)continue;
+    for(let x=bx;x<bx+bw;x++)for(let y=by;y<by+bh;y++)setT(x,y,T_RUIN);
+    addObj(bx+rndInt(1,bw-2),by+rndInt(1,bh-2),'crate');
+    for(let k=0;k<2;k++){if(rnd()<0.7)addObj(bx+rndInt(0,bw-1),by+rndInt(0,bh-1),'scrap');}
+  }
+}
+function findNestSpot(ax,ay){
+  for(let r=0;r<=25;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+    if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+    const nx=ax+dx,ny=ay+dy;
+    if(nx<1||ny<1||nx>=TW-1||ny>=TH-1)continue;
+    if(Math.hypot(nx-BASE.x,ny-BASE.y)<22)continue;
+    if(!walkableAt(nx,ny))continue;
+    const i=ny*TW+nx;
+    if(objs.has(i))objs.delete(i); // 清掉箱子/废料等杂物
+    return{x:nx,y:ny};
+  }
+  return null;
+}
+function countNests(){let n=0;for(const o of objs.values())if(o.type==='nest')n++;return n;}
+
+// ---------- 通行 / 距离场（丧尸寻路：从核心 BFS） ----------
+function isSolid(tx,ty){
+  if(tx<0||ty<0||tx>=TW||ty>=TH)return true;
+  const i=ty*TW+tx;
+  if(!PASS[tiles[i]])return true;
+  const b=blds.get(i);if(isBldSolid(b))return true;
+  const o=objs.get(i);if(o&&(o.type==='tree'||o.type==='rock'))return true;
+  return false;
+}
+function recomputeDist(){
+  dist.fill(65535);
+  const q=new Int32Array(TW*TH);let qh=0,qt=0;
+  const s=BASE.y*TW+BASE.x;
+  dist[s]=0;q[qt++]=s;
+  while(qh<qt){
+    const i=q[qh++],d=dist[i]+1,x=i%TW,y=(i/TW)|0;
+    let j;
+    if(x>0){j=i-1;if(dist[j]===65535&&walkableAt(x-1,y)){dist[j]=d;q[qt++]=j;}}
+    if(x<TW-1){j=i+1;if(dist[j]===65535&&walkableAt(x+1,y)){dist[j]=d;q[qt++]=j;}}
+    if(y>0){j=i-TW;if(dist[j]===65535&&walkableAt(x,y-1)){dist[j]=d;q[qt++]=j;}}
+    if(y<TH-1){j=i+TW;if(dist[j]===65535&&walkableAt(x,y+1)){dist[j]=d;q[qt++]=j;}}
+  }
+}
+function revealFog(){
+  const r=10,px=Math.floor(player.x),py=Math.floor(player.y);
+  for(let y=py-r;y<=py+r;y++)for(let x=px-r;x<=px+r;x++){
+    if(x<0||y<0||x>=TW||y>=TH)continue;
+    if((x-px)*(x-px)+(y-py)*(y-py)<=r*r)fog[y*TW+x]=1;
+  }
+}
+
+// ---------- UI ----------
+function initUI(){
+  const bar=$('bbar');bar.innerHTML='';
+  actBtns=[];
+  const mkBig=(label,fn)=>{const b=document.createElement('button');b.textContent=label;b.className='big';b.onclick=()=>{audio();fn();};bar.appendChild(b);return b;};
+  mkBig('🎒 背包 [B]',toggleBackpack);
+  mkBig('🏗️ 建筑',toggleBuildPanel);
+  const mk=(label,title,fn)=>{const b=document.createElement('button');b.textContent=label;b.title=title;b.onclick=()=>{audio();fn();};bar.appendChild(b);return b;};
+  actBtns.push({el:mk('🧨拆除','[R] 左键点建筑拆除返还50%',''),fn:'demo'});
+  actBtns.push({el:mk('⏩×2速度','[T]',''),fn:'speed'});
+  actBtns.push({el:mk('💾保存',''),fn:'save'});
+  actBtns.push({el:mk('❓帮助',''),fn:'help'});
+  for(const a of actBtns){const f=a.fn;a.el.onclick=()=>{audio();actAction(f);};}
+}
+function actAction(f){
+  if(f==='ammo'){if(invCount('metal')>=1){invRemove('metal',1);invAdd('ammo',5);SND.pick();addMsg('🔫 +5 弹药');}else addMsg('⚙️ 金属不足（熔炉炼制）');}
+  else if(f==='seed'){if(invCount('food')>=1){invRemove('food',1);invAdd('seeds',2);SND.pick();addMsg('🌱 +2 种子');}else addMsg('🍖 食物不足');}
+  else if(f==='med'){if(invCount('food')>=2){invRemove('food',2);invAdd('medkit',1);SND.pick();addMsg('🩹 +1 绷带');}else addMsg('🍖 食物不足（需2）');}
+  else if(f==='bat'){if(invCount('wood')>=3){invRemove('wood',3);invAdd('bat',1);SND.pick();addMsg('🏏 合成 棒球棍（近战伤害18）');}else addMsg('🪵 木材不足（需3）');}
+  else if(f==='bp'){toggleBackpack();}
+  else if(f==='usemed'){useMed();}
+  else if(f==='core'){upgradeCore();}
+  else if(f==='demo'){demolish=!demolish;buildType=null;addMsg(demolish?'🧨 拆除模式：左键点击建筑':'拆除模式关闭');}
+  else if(f==='speed'){timeScale=(timeScale===1?2:1);addMsg('⏩ 速度 ×'+timeScale);}
+  else if(f==='save'){saveGame();}
+  else if(f==='help'){showHelp();}
+}
+function useMed(){
+  if(state!=='play')return;
+  if(invCount('medkit')>0&&medCd<=0){
+    invRemove('medkit',1);player.hp=Math.min(player.maxhp,player.hp+30);medCd=3;SND.eat();
+    addMsg('🩹 生命 +30');
+  }else if(invCount('medkit')<=0){addMsg('没有绷带（2食物合成）');}
+}
+function upgradeCore(){
+  if(!coreRef)return;
+  if(invCount('stone')>=8&&invCount('metal')>=4){
+    invRemove('stone',8);invRemove('metal',4);
+    coreRef.maxhp+=150;coreRef.hp=Math.min(coreRef.maxhp,coreRef.hp+150);
+    SND.place();addMsg('⬆️ 核心升级！耐久 +150');
+  }else addMsg('材料不足：8石头 + 4金属');
+}
+// ---------- 背包 UI ----------
+function toggleBackpack(){
+  if(state!=='play')return;
+  if(panelInfo||panelSurv||panelChest||buildPanelOpen)return;
+  bpOpen=!bpOpen;
+  if(bpOpen){renderBP();$('bpanel').className='';paused=true;}
+  else{$('bpanel').className='hidden';paused=false;}
+}
+function renderBP(){
+  let eq='<div class="clbl">🪵×'+invCount('wood')+' 🪨×'+invCount('stone')+' ⚙️×'+invCount('metal')+' 🍖×'+invCount('food')+' 🔫×'+invCount('ammo')+' 🌱×'+invCount('seeds')+' 🩹×'+invCount('medkit')+'</div><span class="lbl">枪械：</span>';
+  eq+='<div class="bpslot'+(equip.gun?' eq':'')+'" onclick="bpEquipClick(\'gun\')"><div class="ic">'+(equip.gun?ITEMS[equip.gun].icon:'🚫')+'</div><div class="n">'+(equip.gun?ITEMS[equip.gun].name:'空手')+'</div></div>';
+  eq+='<span class="lbl">近战：</span>';
+  eq+='<div class="bpslot'+(equip.melee?' eq':'')+'" onclick="bpEquipClick(\'melee\')"><div class="ic">'+(equip.melee?ITEMS[equip.melee].icon:'✊')+'</div><div class="n">'+(equip.melee?ITEMS[equip.melee].name:'空手(8)')+'</div></div>';
+  $('bp-equip').innerHTML=eq;
+  let grid='';
+  for(let i=0;i<bp.length;i++){
+    const s=bp[i];
+    const eqc=(s.id&&(equip.gun===s.id||equip.melee===s.id))?' eq':'';
+    if(s.id){
+      grid+='<div class="bpslot'+eqc+'" title="'+ITEMS[s.id].name+(ITEMS[s.id].desc?' - '+ITEMS[s.id].desc:'')+'" onclick="bpClick('+i+')"><div class="ic">'+ITEMS[s.id].icon+'</div><div class="n">×'+s.n+'</div></div>';
+    }else{
+      grid+='<div class="bpslot empty"></div>';
+    }
+  }
+  $('bp-grid').innerHTML=grid;
+  const craft=[['ammo','🔫 子弹×5','⚙️1'],['seed','🌱 种子×2','🍖1'],['med','🩹 绷带','🍖2'],['bat','🏏 棒球棍','🪵3'],['core','⬆️ 核心升级','🪨8⚙️4']];
+  let ch='<div class="bp-craft">';
+  for(const c of craft){
+    let ok=true;
+    if(c[0]==='ammo')ok=invCount('metal')>=1;
+    else if(c[0]==='seed')ok=invCount('food')>=1;
+    else if(c[0]==='med')ok=invCount('food')>=2;
+    else if(c[0]==='bat')ok=invCount('wood')>=3;
+    else if(c[0]==='core')ok=invCount('stone')>=8&&invCount('metal')>=4;
+    ch+='<button class="'+(ok?'':'off')+'" onclick="actAction(\''+c[0]+'\')">'+c[1]+' <small>('+c[2]+')</small></button>';
+  }
+  ch+='</div>';
+  $('bp-grid').innerHTML=grid+ch;
+  $('bp-info').textContent='点击武器=装备/卸下 · 点击食物/绷带=使用 · B或Esc关闭';
+}
+function bpClick(i){
+  const s=bp[i];if(!s||!s.id)return;
+  const def=ITEMS[s.id];
+  if(def.kind==='gun'){equip.gun=(equip.gun===s.id?null:s.id);addMsg(equip.gun===s.id?'🔫 已装备 '+def.name:'已卸下 '+def.name);renderBP();}
+  else if(def.kind==='melee'){equip.melee=(equip.melee===s.id?null:s.id);addMsg(equip.melee===s.id?'🗡️ 已装备 '+def.name:'已卸下 '+def.name);renderBP();}
+  else if(s.id==='medkit'){useMed();renderBP();}
+  else if(s.id==='food'){if(invRemove('food',1)){player.hp=Math.min(player.maxhp,player.hp+10);SND.eat();addMsg('🍖 吃掉食物 +10HP');renderBP();}}
+  else addMsg(def.name+' ×'+s.n);
+}
+function bpEquipClick(kind){
+  if(kind==='gun'){equip.gun=null;addMsg('已卸下枪械');}
+  else{equip.melee=null;addMsg('已卸下近战武器');}
+  renderBP();
+}
+// ---------- 建筑信息面板 ----------
+function closeInfo(){panelInfo=null;$('infopanel').className='hidden';$('infopanel-inner').innerHTML='';paused=false;}
+function openBldInfo(b){
+  panelInfo=b;panelSurv=null;paused=true;
+  const d=BLD_DEFS[b.type];
+  let h='<div class="pop-head"><span>'+d.name+'</span><button onclick="closeInfo()">✕ 关闭</button></div><div class="pop-body">';
+  h+='<p>耐久：'+Math.ceil(b.hp)+' / '+b.maxhp+'</p>';
+  if(b.type==='farm'){
+    if(!b.planted)h+='<p>状态：未种植（播种需要 1 🌱种子）</p>';
+    else if(b.ready)h+='<p>状态：🌾 已成熟，可收获</p>';
+    else h+='<p>状态：🌱 生长中 '+Math.min(100,Math.floor(b.grow/45*100))+'%</p>';
+  }else if(b.type==='door'){
+    h+='<p>状态：'+(b.open?'🟢 打开':'🔴 关闭')+'（按E也可开关）</p>';
+  }else if(b.type==='bed'){
+    h+='<p>床铺：'+(b.user?'有人使用中':'空闲')+'</p><p>夜晚可以上床睡觉，缓慢恢复生命。</p>';
+  }else if(b.type==='chest'){
+    h+='<p>储物箱：可存放物品，容量与背包一致（24格）。</p>';
+  }else if(b.type==='turret'){
+    h+='<p>自动射击（范围7格），消耗背包中的弹药。</p>';
+  }else if(b.type==='furnace'){
+    h+='<p>自动冶炼：1石头+1木头 → 1金属（8秒）。</p>';
+  }
+  h+='<div class="pop-btns">';
+  if(b.type==='farm'){
+    if(!b.planted)h+='<button onclick="farmPlantUI()">🌱 种植（1种子）</button>';
+    else if(b.ready)h+='<button onclick="farmHarvestUI()">🌾 收获</button>';
+  }
+  if(b.type==='door')h+='<button onclick="doorToggleUI()">'+(b.open?'🔒 关闭':'🔓 打开')+'</button>';
+  if(b.type==='bed'){
+    if(isNight()&&!b.user)h+='<button onclick="bedUseUI()">💤 上床睡觉</button>';
+    else if(b.user==='player')h+='<button onclick="bedUseUI()">⏰ 起床</button>';
+  }
+  if(b.type==='chest')h+='<button onclick="chestOpenUI()">📦 打开箱子</button>';
+  h+='<button onclick="repairBldUI()">🔧 修补</button>';
+  if(b.type!=='core')h+='<button class="warn" onclick="demolishBldUI()">🧨 拆除</button>';
+  h+='</div></div>';
+  $('infopanel-inner').innerHTML=h;
+  $('infopanel').className='';
+}
+function refreshInfo(){if(panelInfo)openBldInfo(panelInfo);}
+function farmPlantUI(){
+  const b=panelInfo;if(!b)return;
+  if(invCount('seeds')>0){invRemove('seeds',1);b.planted=true;b.grow=0;b.ready=false;b.stage=0;addMsg('🌱 已播种');SND.place();}
+  else addMsg('没有种子！用1食物合成2种子。');
+  refreshInfo();
+}
+function farmHarvestUI(){
+  const b=panelInfo;if(!b)return;
+  if(b.ready){invAddMsg('food',2);invAddMsg('seeds',1);b.planted=false;b.grow=0;b.ready=false;b.stage=0;addMsg('🌾 收获 +2食物 +1种子');SND.eat();}
+  refreshInfo();
+}
+function doorToggleUI(){
+  const b=panelInfo;if(!b)return;
+  b.open=!b.open;distDirty=true;SND.place();
+  addMsg(b.open?'🔓 门已打开':'🔒 门已关闭');
+  refreshInfo();
+}
+function bedUseUI(){
+  const b=panelInfo;if(!b)return;
+  if(b.user==='player'){b.user=null;player.sleeping=false;addMsg('⏰ 你起床了');}
+  else if(!isNight()){addMsg('只有夜晚才能睡觉');}
+  else if(b.user){addMsg('这张床有人用了');}
+  else{b.user='player';player.sleeping=true;addMsg('💤 你上床睡觉了…（移动或点击可起床）');closeInfo();return;}
+  refreshInfo();
+}
+function chestOpenUI(){const b=panelInfo;closeInfo();if(b)openChestPanel(b);}
+function repairBldUI(){
+  const b=panelInfo;if(!b)return;
+  const r=BLD_DEFS[b.type].repair;
+  const diff=b.maxhp-b.hp;
+  if(diff<=0){addMsg('耐久已满');return;}
+  const need=Math.ceil(diff/r.per);
+  const matName=r.mat==='wood'?'🪵木材':(r.mat==='stone'?'🪨石头':'⚙️金属');
+  if(invCount(r.mat)>=need){invRemove(r.mat,need);b.hp=b.maxhp;SND.place();addMsg('🔧 已修复，消耗 '+matName+'×'+need);}
+  else addMsg('材料不足：'+matName+'×'+need);
+  refreshInfo();
+}
+function demolishBldUI(){
+  const b=panelInfo;if(!b)return;
+  if(b.type==='core'){addMsg('核心不可拆除');return;}
+  const i=b.y*TW+b.x;
+  if(b.user){if(b.user==='player')wakePlayer('床被拆了');else b.user.sleeping=false;}
+  blds.delete(i);distDirty=true;SND.boom();
+  const d=BLD_DEFS[b.type];
+  if(d.cost){for(const k in d.cost){invAdd(k,Math.floor(d.cost[k]/2));}}
+  addMsg('🧨 拆除 '+d.name+'（返还50%）');
+  closeInfo();
+}
+// ---------- 建筑选择面板 ----------
+function toggleBuildPanel(){
+  if(state!=='play')return;
+  if(panelInfo||panelSurv||panelChest||bpOpen)return;
+  buildPanelOpen=!buildPanelOpen;
+  if(buildPanelOpen){
+    renderBuildPanel();
+    $('buildpanel').className='';
+    paused=true;
+  }else{
+    $('buildpanel').className='hidden';
+    paused=false;
+  }
+}
+function renderBuildPanel(){
+  let h='<div class="pop-head"><span>🏗️ 建筑（点击选择，左键放置，右键取消）</span><button onclick="toggleBuildPanel()">✕ 关闭</button></div>';
+  BUILD_ORDER.forEach((type,idx)=>{
+    const d=BLD_DEFS[type];
+    const ok=canAfford(d.cost||{});
+    const cost=Object.entries(d.cost||{}).map(([k,v])=>(k==='wood'?'🪵':k==='stone'?'🪨':'⚙️')+v).join(' ');
+    h+='<button class="build-item'+(ok?'':' off')+'" onclick="selectBuild(\''+type+'\')"><span>'+d.name+' ['+(idx+1)+']</span><span>'+cost+'</span></button>';
+  });
+  $('buildpanel-inner').innerHTML=h;
+}
+function selectBuild(type){
+  buildType=(buildType===type?null:type);
+  demolish=false;
+  toggleBuildPanel();
+}
+// ---------- 箱子面板 ----------
+function openChestPanel(b){
+  panelChest=b;paused=true;
+  renderChest();
+  $('chestpanel').className='';
+}
+function closeChestPanel(){panelChest=null;$('chestpanel').className='hidden';$('chestpanel-inner').innerHTML='';paused=false;}
+function renderChest(){
+  const b=panelChest;if(!b)return;
+  if(!b.items)b.items=Array.from({length:24},()=>({id:null,n:0}));
+  const slotHtml=(s,click)=>{
+    if(s.id)return '<div class="bpslot" title="'+ITEMS[s.id].name+'" onclick="'+click+'"><div class="ic">'+ITEMS[s.id].icon+'</div><div class="n">×'+s.n+'</div></div>';
+    return '<div class="bpslot empty"></div>';
+  };
+  let h='<div class="pop-head"><span>📦 箱子（点击物品 = 存取）</span><button onclick="closeChestPanel()">✕ 关闭</button></div>';
+  h+='<div class="clbl">—— 箱子（24格）——</div><div class="cgrid">';
+  for(let i=0;i<b.items.length;i++)h+=slotHtml(b.items[i],'chestTake('+i+')');
+  h+='</div><div class="clbl">—— 我的背包 ——</div><div class="cgrid">';
+  for(let i=0;i<bp.length;i++)h+=slotHtml(bp[i],'chestPut('+i+')');
+  h+='</div><div class="pop-btns">';
+  h+='<button onclick="chestPutAll()">⬇️ 全部存入</button><button onclick="chestTakeAll()">⬆️ 全部取出</button>';
+  h+='</div>';
+  $('chestpanel-inner').innerHTML=h;
+}
+function moveStack(fromArr,toArr,i){
+  const s=fromArr[i];if(!s||!s.id)return false;
+  const def=ITEMS[s.id];let left=s.n;
+  for(const t of toArr){if(left<=0)break;if(t.id===s.id&&t.n<def.stack){const a=Math.min(left,def.stack-t.n);t.n+=a;left-=a;}}
+  for(const t of toArr){if(left<=0)break;if(t.id===null){const a=Math.min(left,def.stack);t.id=s.id;t.n=a;left-=a;}}
+  const moved=s.n-left;
+  if(left>0){s.n=left;return moved>0;}
+  s.id=null;s.n=0;
+  return true;
+}
+function chestPut(i){
+  const b=panelChest;if(!b)return;
+  if(moveStack(bp,b.items,i)){SND.pick();renderChest();}
+  else addMsg('📦 箱子已满！');
+}
+function chestTake(i){
+  const b=panelChest;if(!b)return;
+  if(moveStack(b.items,bp,i)){SND.pick();renderChest();}
+  else addMsg('🎒 背包已满！');
+}
+function chestPutAll(){
+  const b=panelChest;if(!b)return;
+  for(let i=0;i<bp.length;i++){if(bp[i].id)moveStack(bp,b.items,i);}
+  SND.pick();renderChest();
+}
+function chestTakeAll(){
+  const b=panelChest;if(!b)return;
+  for(let i=0;i<b.items.length;i++){if(b.items[i].id)moveStack(b.items,bp,i);}
+  SND.pick();renderChest();
+}
+function chestAdd(b,id,n){
+  if(!b.items)b.items=Array.from({length:24},()=>({id:null,n:0}));
+  const def=ITEMS[id];let left=n;
+  for(const s of b.items){if(left<=0)break;if(s.id===id&&s.n<def.stack){const a=Math.min(left,def.stack-s.n);s.n+=a;left-=a;}}
+  for(const s of b.items){if(left<=0)break;if(s.id===null){const a=Math.min(left,def.stack);s.id=id;s.n=a;left-=a;}}
+  return left;
+}
+function nearestChest(e){
+  let best=null,bd=1e9;
+  for(const b of blds.values()){
+    if(b.type!=='chest')continue;
+    const d=(b.x-e.x)*(b.x-e.x)+(b.y-e.y)*(b.y-e.y);
+    if(d<bd){bd=d;best=b;}
+  }
+  return best;
+}
+function survivorDeposit(s){
+  const c=nearestChest(s);
+  if(!c)return false;
+  for(const k in s.inv){
+    if(s.inv[k]>0){s.inv[k]=chestAdd(c,k,s.inv[k]);}
+  }
+  return true;
+}
+// ---------- 幸存者指令面板 ----------
+function openSurvInfo(s){
+  panelSurv=s;panelInfo=null;paused=true;
+  const modeName={follow:'跟随',gather:'采集',guard:'守卫'}[s.mode]||'跟随';
+  let h='<div class="pop-head"><span>🧍 '+s.name+'（已入队）</span><button onclick="closeSurvInfo()">✕ 关闭</button></div><div class="pop-body">';
+  h+='<p>生命：'+Math.ceil(s.hp)+' / '+s.maxhp+' · 当前指令：'+modeName+'</p>';
+  if(s.mode==='gather'){
+    let inv='';
+    for(const k in s.inv)if(s.inv[k]>0)inv+=ITEMS[k].icon+'×'+s.inv[k]+' ';
+    h+='<p>采集背包：'+(inv||'（空）')+'</p>';
+  }
+  h+='<div class="pop-btns">';
+  h+='<button onclick="survCmd(\'gather\')">🌾 采集（白天干活，晚上存箱睡觉）</button>';
+  h+='<button onclick="survCmd(\'guard\')">🛡️ 守卫（白天睡觉，晚上巡逻战斗）</button>';
+  h+='<button onclick="survCmd(\'follow\')">🚶 跟随</button>';
+  h+='</div></div>';
+  $('infopanel-inner').innerHTML=h;
+  $('infopanel').className='';
+}
+function closeSurvInfo(){panelSurv=null;$('infopanel').className='hidden';$('infopanel-inner').innerHTML='';paused=false;}
+function survCmd(mode){
+  const s=panelSurv;
+  if(s){s.mode=mode;s.sleeping=false;s.path=null;s.tgtIdx=null;s.patrolP=null;
+    addMsg(s.name+' 的新指令：'+({gather:'🌾 采集',guard:'🛡️ 守卫',follow:'🚶 跟随'})[mode]);
+  }
+  closeSurvInfo();
+}
+function refreshBar(){
+  for(const a of actBtns){
+    if(a.fn==='demo'){a.el.className=demolish?'act':'';continue;}
+    if(a.fn==='speed'){a.el.className=timeScale===2?'act':'';continue;}
+  }
+}
+// canAfford/payCost 定义见上方“物品与背包”一节
+function hudTick(){
+  if(!player)return;
+  const night=isNight();
+  let s='第 '+day+' 天 · '+(night?'🌙 夜晚':'☀️ 白天');
+  if(!night&&tod>DAY_LEN-12)s+=' · ⚠️ 夜晚将至';
+  if(night)s+=' · 尸潮 '+(spawnList.length-si+zombies.length);
+  s+=' · 巢穴 '+(nestsTotal-nestsDestroyed)+'/'+nestsTotal;
+  if(paused)s+=' · ⏸已暂停';
+  setText('dayline',s);
+  let tip='E互动/开门/开箱 · 点击建筑查看信息 · 点击幸存者下指令 · B背包';
+  if(player.sleeping)tip='💤 睡眠中…（移动或点击起床）';
+  else if(buildType)tip='左键放置 '+BLD_DEFS[buildType].name+' · 右键取消';
+  else if(demolish)tip='左键点击建筑拆除（返还50%材料）';
+  setText('tip',tip);
+}
+
+// ---------- 存档 ----------
+function saveGame(){
+  try{
+    const data={
+      v:2,day,tod,nightStarted,si,spawnList,
+      bp:bp.map(s=>({id:s.id,n:s.n})),equip:{gun:equip.gun,melee:equip.melee},
+      player:{x:player.x,y:player.y,hp:player.hp},
+      kills,cratesOpened,nestsDestroyed,
+      tiles:Array.from(tiles),fog:Array.from(fog),
+      objs:[...objs].map(e=>[e[0],Object.assign({},e[1])]),
+      blds:[...blds].map(e=>[e[0],Object.assign({},e[1])]),
+      survivors:survivors.map(s=>Object.assign({},s)),
+      zombies:zombies.map(z=>{const c=Object.assign({},z);c.target=null;return c;}),
+    };
+    localStorage.setItem(SAVE_KEY,JSON.stringify(data));
+    addMsg('💾 已保存');
+  }catch(e){addMsg('保存失败：'+e.message);}
+}
+function loadGame(){
+  let raw=null;
+  try{raw=localStorage.getItem(SAVE_KEY);}catch(e){return false;}
+  if(!raw)return false;
+  try{
+    const d=JSON.parse(raw);
+    tiles.set(d.tiles);fog.set(d.fog);
+    objs.clear();for(const e of d.objs)objs.set(e[0],e[1]);
+    blds.clear();for(const e of d.blds){blds.set(e[0],e[1]);if(e[1].type==='core')coreRef=e[1];}
+    for(const b of blds.values()){
+      b.user=null;b.open=!!b.open;
+      if(b.type==='chest'){
+        if(!b.items)b.items=Array.from({length:24},()=>({id:null,n:0}));
+        for(const s2 of b.items){s2.id=s2.id||null;s2.n=s2.n||0;}
+      }else b.items=null;
+    }
+    survivors=d.survivors||[];
+    for(const s of survivors){s.name=s.name||'幸存者';s.mode=s.mode||'follow';s.inv=s.inv||{wood:0,stone:0,metal:0};s.sleeping=false;s.path=null;s.patrolP=null;s.tgtIdx=null;s.recruited=!!s.recruited;s.alive=s.alive!==false;}
+    zombies.length=0;for(const z of d.zombies||[]){z.target=null;zombies.push(z);}
+    if(d.tod<DAY_LEN)zombies.length=0; // 白天载入时清场
+    bullets.length=0;parts.length=0;texts.length=0;
+    if(d.bp){bp=d.bp.map(s=>({id:s.id||null,n:s.n||0}));}
+    else if(d.res){bp=Array.from({length:24},()=>({id:null,n:0}));for(const k in d.res){const v=d.res[k];if(v>0)invAdd(k==='medkits'?'medkit':k,v);}invAdd('pistol',1);invAdd('machete',1);}
+    else{bp=Array.from({length:24},()=>({id:null,n:0}));}
+    equip=d.equip?{gun:d.equip.gun||null,melee:d.equip.melee||null}:{gun:'pistol',melee:'machete'};
+    day=d.day;tod=d.tod;
+    player=Object.assign({x:0,y:0,hp:100,maxhp:100,aim:0},d.player);
+    player.sleeping=false;
+    kills=d.kills||0;cratesOpened=d.cratesOpened||0;nestsDestroyed=d.nestsDestroyed||0;
+    nestsTotal=countNests();
+    spawnList=d.spawnList||[];si=d.si||0;nightStarted=d.nightStarted||false;nightWarned=nightStarted;
+    distDirty=true;
+    return true;
+  }catch(e){return false;}
+}
+function hasSave(){try{return !!localStorage.getItem(SAVE_KEY);}catch(e){return false;}}
+
+// ---------- 移动与碰撞 ----------
+function moveWithCollision(e,dx,dy,sp,dt){
+  let nx=e.x+dx*sp*dt,ny=e.y+dy*sp*dt;
+  if(!isSolid(Math.floor(nx),Math.floor(e.y)))e.x=nx;
+  if(!isSolid(Math.floor(e.x),Math.floor(ny)))e.y=ny;
+}
+function playerUpdate(dt){
+  // 睡眠状态：不能行动，快速回血
+  if(player.sleeping){
+    player.hp=Math.min(player.maxhp,player.hp+dt*4);
+    if(invCount('food')>0)player.hp=Math.min(player.maxhp,player.hp+dt*1.2);
+    foodT+=dt;
+    if(foodT>=40){
+      foodT=0;
+      if(invCount('food')>0)invRemove('food',1);
+      else{player.hp-=1;addMsg('🍖 没有食物了！HP持续下降，快去种田/搜刮！');if(player.hp<=0){player.hp=0;gameOver(false);}}
+    }
+    const moved=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight;
+    if(moved||mouse.down)wakePlayer('⏰ 你醒了');
+    meleeCd-=dt;medCd-=dt;interactCd-=dt;
+    return;
+  }
+  let dx=0,dy=0;
+  if(keys.KeyW||keys.ArrowUp)dy-=1;
+  if(keys.KeyS||keys.ArrowDown)dy+=1;
+  if(keys.KeyA||keys.ArrowLeft)dx-=1;
+  if(keys.KeyD||keys.ArrowRight)dx+=1;
+  const sp=4.6*(keys.ShiftLeft||keys.ShiftRight?1.45:1);
+  if(dx||dy){const m=Math.hypot(dx,dy);dx/=m;dy/=m;moveWithCollision(player,dx,dy,sp,dt);}
+  player.aim=Math.atan2(mouse.y-H2/2,mouse.x-W2/2);
+  // 射击
+  fireCd-=dt;
+  if(mouse.down&&fireCd<=0&&!buildType&&!demolish){
+    if(equip.gun&&invCount('ammo')>0){
+      invRemove('ammo',1);fireCd=0.22;SND.shoot();spawnBullet(player.x,player.y,player.aim,24,12,'player',0.42);
+    }else{
+      if(equip.gun&&invCount('ammo')<=0&&lowAmmoT<=0){lowAmmoT=4;addMsg('⚠️ 弹药耗尽！自动改用近战，或按B进背包合成子弹。');}
+      melee();
+    }
+  }
+  // 生命恢复
+  if(invCount('food')>0)player.hp=Math.min(player.maxhp,player.hp+dt*1.2);
+  // 食物消耗
+  foodT+=dt;
+  if(foodT>=40){
+    foodT=0;
+    if(invCount('food')>0)invRemove('food',1);
+    else{player.hp-=1;addMsg('🍖 没有食物了！HP持续下降，快去种田/搜刮！');if(player.hp<=0){player.hp=0;gameOver(false);}}
+  }
+  meleeCd-=dt;medCd-=dt;interactCd-=dt;
+  if(keys.Space)melee();
+}
+function wakePlayer(msg){
+  player.sleeping=false;
+  for(const b of blds.values()){if(b.type==='bed'&&b.user==='player'){b.user=null;break;}}
+  if(msg)addMsg(msg);
+}
+function melee(){
+  if(state!=='play'||meleeCd>0)return;
+  if(player.sleeping)wakePlayer('⏰ 你醒了');
+  meleeCd=0.45;SND.hit();
+  const dmg=meleeDmg();
+  let hitAny=false;
+  for(const z of zombies){
+    const d=Math.hypot(z.x-player.x,z.y-player.y);
+    if(d<1.5){
+      z.hp-=dmg;z.hitT=0.08;hitAny=true;
+      const a=Math.atan2(z.y-player.y,z.x-player.x);
+      z.kbT=0.28;z.kbx=Math.cos(a)*8;z.kby=Math.sin(a)*8;
+      bloodFx(z.x,z.y);
+      if(z.hp<=0)killZombie(z);
+    }
+  }
+  // 近战也能打巢穴
+  for(const [i,o] of objs){
+    if(o.type!=='nest')continue;
+    const d=Math.hypot(o.x+0.5-player.x,o.y+0.5-player.y);
+    if(d<1.6){o.hp-=dmg;o.flash=0.1;hitAny=true;bloodFx(o.x+0.5,o.y+0.5);if(o.hp<=0)destroyNest(i,o);}
+  }
+  if(!hitAny)SND.chop();
+}
+function spawnBullet(x,y,ang,speed,dmg,from,life){
+  bullets.push({x,y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,dmg,from,life});
+}
+// ---------- 交互：采集 / 搜刮 / 种植 / 救援 ----------
+function doInteract(){
+  // 救援幸存者
+  for(const s of survivors){
+    if(!s.recruited&&s.alive&&Math.hypot(s.x-player.x,s.y-player.y)<1.7){
+      s.recruited=true;SND.pick();
+      addMsg('🤝 幸存者加入了你的队伍！点击TA可以下达指令。');
+      return;
+    }
+  }
+  // 门 / 箱子
+  let nb=null,nbd=1.7;
+  for(const b of blds.values()){
+    if(b.type==='door'||b.type==='chest'){
+      const d=Math.hypot(b.x+0.5-player.x,b.y+0.5-player.y);
+      if(d<nbd){nbd=d;nb=b;}
+    }
+  }
+  if(nb){
+    if(nb.type==='door'){nb.open=!nb.open;distDirty=true;SND.place();addMsg(nb.open?'🔓 门已打开':'🔒 门已关闭');}
+    else openChestPanel(nb);
+    return;
+  }
+  // 最近的交互目标
+  let best=null,bd=1.8;
+  for(const [i,o] of objs){
+    if(o.type==='nest')continue;
+    const d=Math.hypot(o.x+0.5-player.x,o.y+0.5-player.y);
+    if(d<bd){bd=d;best={kind:'obj',i,o};}
+  }
+  for(const [i,b] of blds){
+    if(b.type!=='farm')continue;
+    const d=Math.hypot(b.x+0.5-player.x,b.y+0.5-player.y);
+    if(d<bd){bd=d;best={kind:'farm',i,b};}
+  }
+  if(!best)return;
+  if(best.kind==='farm'){
+    const b=best.b;
+    if(!b.planted){
+      if(invCount('seeds')>0){invRemove('seeds',1);b.planted=true;b.grow=0;b.ready=false;b.stage=0;addMsg('🌱 已播种');SND.place();}
+      else addMsg('没有种子！用1食物合成2种子。');
+    }else if(b.ready){
+      invAddMsg('food',2);invAddMsg('seeds',1);b.planted=false;b.grow=0;b.ready=false;b.stage=0;
+      addMsg('🌾 收获 +2食物 +1种子');SND.eat();textFx(b.x+0.5,b.y+0.5,'+2🍖 +1🌱','#ffd76a');
+    }else addMsg('🌱 还在生长…');
+    return;
+  }
+  const o=best.o,i=best.i;
+  if(o.type==='tree'){o.hp--;SND.chop();partFx(o.x+0.5,o.y+0.5,'#6b4a2a',3);
+    if(o.hp<=0){const n=rndInt(2,3);invAddMsg('wood',n);objs.delete(i);distDirty=true;textFx(o.x+0.5,o.y+0.5,'+'+n+' 🪵','#c9a15a');}
+  }else if(o.type==='rock'){o.hp--;SND.chop();partFx(o.x+0.5,o.y+0.5,'#9aa0a8',3);
+    if(o.hp<=0){const n=rndInt(2,3);invAddMsg('stone',n);objs.delete(i);distDirty=true;textFx(o.x+0.5,o.y+0.5,'+'+n+' 🪨','#b8c0cc');}
+  }else if(o.type==='scrap'){invAddMsg('metal',1);objs.delete(i);SND.pick();textFx(o.x+0.5,o.y+0.5,'+1 ⚙️','#9fc3ff');}
+  else if(o.type==='crate'){openCrate(i,o);}
+}
+function openCrate(i,o){
+  const loot=[['wood',rndInt(2,5)],['stone',rndInt(0,3)],['metal',rndInt(0,2)],['food',rndInt(1,3)],['ammo',rndInt(3,8)]];
+  if(rnd()<0.5)loot.push(['seeds',1]);
+  if(rnd()<0.15)loot.push(['medkit',1]);
+  if(rnd()<0.06)loot.push(['bat',1]);
+  let t='';
+  for(const [k,v] of loot){invAddMsg(k,v);t+=ITEMS[k].icon+'×'+v+' ';}
+  objs.delete(i);cratesOpened++;SND.pick();partFx(o.x+0.5,o.y+0.5,'#d8b84a',6);
+  addMsg('📦 搜刮：'+t);textFx(o.x+0.5,o.y+0.5,'📦 '+t,'#ffd76a');
+}
+// ---------- 建造 ----------
+function addBuilding(type,x,y){
+  const d=BLD_DEFS[type];
+  const b={type,x,y,hp:d.hp,maxhp:d.hp,cd:0,ang:-1.5,flash:0,prog:0,planted:false,grow:0,ready:false,stage:0,open:false,user:null,items:(type==='chest'?Array.from({length:24},()=>({id:null,n:0})):null)};
+  blds.set(y*TW+x,b);
+  if(type==='core')coreRef=b;
+  distDirty=true;
+  return b;
+}
+function tryPlace(tx,ty){
+  if(!buildType)return;
+  const d=BLD_DEFS[buildType];
+  if(tx<0||ty<0||tx>=TW||ty>=TH)return;
+  const i=ty*TW+tx;
+  if(!PASS[tiles[i]]){addMsg('❌ 无法在树木/水上建造');return;}
+  if(objs.has(i)){addMsg('❌ 此处有障碍物');return;}
+  if(blds.has(i)){addMsg('❌ 此处已有建筑');return;}
+  if(!canAfford(d.cost)){addMsg('❌ 材料不足：'+Object.entries(d.cost).map(([k,v])=>(k==='wood'?'🪵':'⚙️')+v).join(''));return;}
+  payCost(d.cost);
+  addBuilding(buildType,tx,ty);
+  SND.place();
+  addMsg('🔨 建造 '+d.name);
+}
+function demolishAt(tx,ty){
+  if(tx<0||ty<0||tx>=TW||ty>=TH)return;
+  const i=ty*TW+tx;
+  const b=blds.get(i);
+  if(!b){return;}
+  if(b.type==='core'){addMsg('核心不可拆除');return;}
+  blds.delete(i);distDirty=true;SND.boom();
+  const d=BLD_DEFS[b.type];
+  if(d.cost){for(const k in d.cost){const back=Math.floor(d.cost[k]/2);invAdd(k,back);}}
+  addMsg('🧨 拆除 '+d.name+'（返还50%）');
+  partFx(tx+0.5,ty+0.5,'#8a8f94',8);
+}
+// ---------- 建筑运转：哨戒塔 / 熔炉 / 农田 ----------
+function nearestZombie(x,y,r){
+  let best=null,bd=r*r;
+  for(const z of zombies){
+    const dx=z.x-x,dy=z.y-y,d=dx*dx+dy*dy;
+    if(d<bd){bd=d;best=z;}
+  }
+  return best;
+}
+function updateBuildings(dt){
+  for(const b of blds.values()){
+    if(b.type==='turret'){
+      b.cd-=dt;b.flash-=dt;
+      if(b.cd<=0){
+        const tgt=nearestZombie(b.x+0.5,b.y+0.5,7);
+        if(tgt){
+          if(invCount('ammo')>0){
+            invRemove('ammo',1);b.cd=0.9;
+            b.ang=Math.atan2(tgt.y-(b.y+0.5),tgt.x-(b.x+0.5));
+            b.flash=0.06;
+            spawnBullet(b.x+0.5+Math.cos(b.ang)*0.5,b.y+0.5+Math.sin(b.ang)*0.5,b.ang,22,15,'turret',0.32);
+            if(turretSndT<=0){SND.shoot();turretSndT=0.15;}
+          }else{b.cd=1.4;if(lowAmmoT<=0){lowAmmoT=6;addMsg('⚠️ 哨戒塔缺少弹药！');}}
+        }else b.cd=0.2;
+      }
+    }else if(b.type==='furnace'){
+      b.prog+=dt;b.flash-=dt;
+      if(b.prog>=8){
+        if(invCount('stone')>0&&invCount('wood')>0){invRemove('stone',1);invRemove('wood',1);invAdd('metal',1);b.prog=0;b.flash=0.5;SND.pick();}
+        else b.prog=8;
+      }
+    }else if(b.type==='farm'){
+      if(b.planted&&!b.ready){b.grow+=dt;b.stage=Math.min(3,Math.floor(b.grow/15));if(b.stage>=3)b.ready=true;}
+    }
+  }
+}
+// ---------- 幸存者 AI（跟随/采集/守卫） ----------
+function updateSurvivors(dt){
+  for(const s of survivors){
+    if(!s.recruited||!s.alive)continue;
+    s.atkCd-=dt;s.doorCd-=dt;s.pathT-=dt;s.flash-=dt;s.warnT-=dt;
+    if(s.sleeping){
+      s.hp=Math.min(s.maxhp,s.hp+dt*2);
+      const wtz=nearestZombie(s.x,s.y,4);
+      if(wtz){s.sleeping=false;const bd=bedOf(s);if(bd)bd.user=null;}
+      else continue;
+    }
+    // 战斗：范围内丧尸（守卫夜间更主动）
+    const range=(s.mode==='guard'&&isNight())?7.5:5.5;
+    const tz=nearestZombie(s.x,s.y,range);
+    if(tz){
+      s.ang=Math.atan2(tz.y-s.y,tz.x-s.x);
+      const d=Math.hypot(tz.x-s.x,tz.y-s.y);
+      if(d>0.9){
+        moveWithCollision(s,Math.cos(s.ang),Math.sin(s.ang),3.4,dt);
+      }else if(s.atkCd<=0){
+        tz.hp-=14;tz.hitT=0.08;s.atkCd=0.7;bloodFx(tz.x,tz.y);
+        if(tz.hp<=0)killZombie(tz);
+      }
+      continue;
+    }
+    if(s.mode==='follow'){
+      const d=Math.hypot(player.x-s.x,player.y-s.y);
+      if(d>2.4){
+        s.ang=Math.atan2(player.y-s.y,player.x-s.x);
+        moveWithCollision(s,Math.cos(s.ang),Math.sin(s.ang),3.0,dt);
+      }
+    }else if(s.mode==='gather'){
+      updateGatherer(s,dt);
+    }else if(s.mode==='guard'){
+      updateGuard(s,dt);
+    }
+  }
+}
+function bedOf(s){
+  for(const b of blds.values()){if(b.type==='bed'&&b.user===s)return b;}
+  return null;
+}
+function updateGatherer(s,dt){
+  if(isNight()){
+    if(!s.deposited){
+      const c=nearestChest(s);
+      if(c){
+        if(survivorDeposit(s)){s.deposited=true;addMsg('📦 '+s.name+' 把采集的物资存进了箱子');}
+        else survPathTo(s,c.x+0.5,c.y+0.5,dt);
+      }else{
+        if(s.warnT<=0){s.warnT=8;addMsg('⚠️ '+s.name+' 找不到箱子存放物资（请建造箱子）');}
+        survIdleNearCore(s,dt);
+      }
+      return;
+    }
+    const bed=nearestFreeBed(s);
+    if(bed){
+      const d=Math.hypot(bed.x+0.5-s.x,bed.y+0.5-s.y);
+      if(d<1.1){bed.user=s;s.sleeping=true;s.path=null;}
+      else survPathTo(s,bed.x+0.5,bed.y+0.5,dt);
+    }else survIdleNearCore(s,dt);
+    return;
+  }
+  s.deposited=false;
+  let total=0;for(const k in s.inv)total+=s.inv[k];
+  if(total>=24){
+    const c=nearestChest(s);
+    if(c){if(survivorDeposit(s))addMsg('📦 '+s.name+' 背包满了，先存入箱子');else survPathTo(s,c.x+0.5,c.y+0.5,dt);}
+    else survIdleNearCore(s,dt);
+    return;
+  }
+  let tgt=null,tbd=18*18;
+  for(const [i,o] of objs){
+    if(o.type!=='tree'&&o.type!=='rock'&&o.type!=='scrap'&&o.type!=='crate')continue;
+    const d=(o.x-s.x)*(o.x-s.x)+(o.y-s.y)*(o.y-s.y);
+    if(d<tbd){tbd=d;tgt={i,o};}
+  }
+  if(!tgt){survIdleNearCore(s,dt);return;}
+  const d=Math.hypot(tgt.o.x+0.5-s.x,tgt.o.y+0.5-s.y);
+  if(d<1.2){
+    s.path=null;
+    s.ang=Math.atan2(tgt.o.y+0.5-s.y,tgt.o.x+0.5-s.x);
+    if(s.atkCd<=0){
+      s.atkCd=0.7;
+      const o=tgt.o;
+      if(o.type==='tree'||o.type==='rock'){
+        o.hp--;
+        partFx(o.x+0.5,o.y+0.5,'#6b4a2a',2);
+        SND.chop();
+        if(o.hp<=0){
+          const n=rndInt(2,3);
+          survInvAdd(s,o.type==='tree'?'wood':'stone',n);
+          objs.delete(tgt.i);distDirty=true;
+        }
+      }else if(o.type==='scrap'){
+        survInvAdd(s,'metal',1);
+        objs.delete(tgt.i);SND.pick();
+      }else if(o.type==='crate'){
+        survLootCrate(s,tgt.i,o);
+      }
+    }
+  }else{
+    survPathTo(s,tgt.o.x+0.5,tgt.o.y+0.5,dt);
+  }
+}
+function survLootCrate(s,i,o){
+  const loot=[['wood',rndInt(2,5)],['stone',rndInt(0,3)],['metal',rndInt(0,2)],['food',rndInt(1,3)],['ammo',rndInt(3,8)]];
+  if(rnd()<0.5)loot.push(['seeds',1]);
+  if(rnd()<0.15)loot.push(['medkit',1]);
+  let t='';
+  for(const [k,v] of loot){survInvAdd(s,k,v);t+=ITEMS[k].icon+'×'+v+' ';}
+  objs.delete(i);SND.pick();
+  addMsg(s.name+' 搜刮了物资箱：'+t);
+}
+function survInvAdd(s,id,n){
+  let total=0;for(const k in s.inv)total+=s.inv[k];
+  const room=Math.max(0,24-total);
+  s.inv[id]=(s.inv[id]||0)+Math.min(n,room);
+}
+function updateGuard(s,dt){
+  if(!isNight()){
+    const bed=nearestFreeBed(s);
+    if(bed){
+      const d=Math.hypot(bed.x+0.5-s.x,bed.y+0.5-s.y);
+      if(d<1.1){bed.user=s;s.sleeping=true;s.path=null;}
+      else survPathTo(s,bed.x+0.5,bed.y+0.5,dt);
+    }else survIdleNearCore(s,dt);
+    return;
+  }
+  if(!s.patrolP){s.patrolP=randWalkableAround(BASE.x,BASE.y,8);}
+  const p=s.patrolP;
+  const d=Math.hypot(p.x+0.5-s.x,p.y+0.5-s.y);
+  if(d<1.0){s.patrolP=null;s.path=null;}
+  else survPathTo(s,p.x+0.5,p.y+0.5,dt);
+}
+function randWalkableAround(cx,cy,r){
+  for(let k=0;k<12;k++){
+    const a=rnd()*Math.PI*2,rr=rnd()*r;
+    const x=Math.round(cx+Math.cos(a)*rr),y=Math.round(cy+Math.sin(a)*rr);
+    if(walkableS(x,y))return{x,y};
+  }
+  return{x:cx,y:cy};
+}
+function survIdleNearCore(s,dt){
+  const d=Math.hypot(BASE.x+2.5-s.x,BASE.y+1.5-s.y);
+  if(d>1.5){s.ang=Math.atan2(BASE.y+1.5-s.y,BASE.x+2.5-s.x);moveWithCollision(s,Math.cos(s.ang),Math.sin(s.ang),3.0,dt);}
+}
+function nearestFreeBed(s){
+  let best=null,bd=1e9;
+  for(const b of blds.values()){
+    if(b.type!=='bed'||b.user)continue;
+    const d=(b.x-s.x)*(b.x-s.x)+(b.y-s.y)*(b.y-s.y);
+    if(d<bd){bd=d;best=b;}
+  }
+  return best;
+}
+// ---------- 幸存者寻路（BFS，绕障碍、自动开门） ----------
+const sParent=new Int32Array(TW*TH);
+function computePath(sx,sy,tx,ty){
+  const start=Math.floor(sy)*TW+Math.floor(sx);
+  let goal=Math.floor(ty)*TW+Math.floor(tx);
+  const gx=goal%TW,gy=(goal/TW)|0;
+  if(goal===start)return[[tx,ty]];
+  if(!walkableS(gx,gy)){
+    let alt=-1;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=gx+dx,ny=gy+dy;
+      if(nx<0||ny<0||nx>=TW||ny>=TH)continue;
+      const j=ny*TW+nx;
+      if(j===start)return[[sx,sy]];
+      if(walkableS(nx,ny)){alt=j;break;}
+    }
+    if(alt===-1)return null;
+    goal=alt;
+  }
+  sParent.fill(-1);
+  const q=new Int32Array(TW*TH);let qh=0,qt=0;
+  sParent[start]=-2;q[qt++]=start;
+  let found=false;
+  while(qh<qt&&!found){
+    const i=q[qh++];const x=i%TW,y=(i/TW)|0;
+    if(qt>2600)break;
+    for(const n of [[x+1,y],[x-1,y],[x,y+1],[x,y-1]]){
+      const nx=n[0],ny=n[1];
+      if(nx<0||ny<0||nx>=TW||ny>=TH)continue;
+      const j=ny*TW+nx;
+      if(sParent[j]!==-1)continue;
+      if(j===goal){sParent[j]=i;found=true;break;}
+      if(walkableS(nx,ny)){sParent[j]=i;q[qt++]=j;}
+    }
+  }
+  if(!found)return null;
+  const path=[];
+  let cur=goal;
+  while(cur!==-2){path.push([cur%TW,(cur/TW)|0]);cur=sParent[cur];}
+  path.reverse();
+  return path;
+}
+function survPathTo(s,tx,ty,dt){
+  if(s.pathT<=0||!s.path){
+    s.path=computePath(s.x,s.y,tx,ty);
+    s.pathT=0.8;
+    if(!s.path){
+      const a=Math.atan2(ty-s.y,tx-s.x);
+      s.ang=a;
+      moveWithCollision(s,Math.cos(a),Math.sin(a),3.0,dt);
+      return;
+    }
+  }
+  followSurvPath(s,dt);
+}
+function followSurvPath(s,dt){
+  if(!s.path||!s.path.length){s.path=null;return;}
+  const p=s.path[0];
+  const dx=p[0]+0.5-s.x,dy=p[1]+0.5-s.y;
+  const d=Math.hypot(dx,dy);
+  if(d<0.15){s.path.shift();return;}
+  s.ang=Math.atan2(dy,dx);
+  const nx=Math.floor(s.x+dx/d*0.8),ny=Math.floor(s.y+dy/d*0.8);
+  if(nx>=0&&ny>=0&&nx<TW&&ny<TH){
+    const bb=blds.get(ny*TW+nx);
+    if(bb&&bb.type==='door'&&!bb.open&&s.doorCd<=0){
+      bb.open=true;distDirty=true;s.doorCd=1.0;SND.place();
+      return;
+    }
+  }
+  moveWithCollision(s,dx/d,dy/d,3.0,dt);
+}
+// ---------- 丧尸 ----------
+function isNight(){return tod>=DAY_LEN;}
+function spawnZombieAt(x,y,type){
+  const t=ZTYPES[type];
+  const hp=Math.round(t.hp*(1+day*0.06));
+  const sp=t.sp*(isNight()?1.3:1); // 夜间丧尸更快，确保能赶到基地
+  zombies.push({x,y,type,hp,maxhp:hp,sp:sp,dmg:t.dmg,bdmg:t.bdmg,atkInt:t.atkInt,rad:t.rad,color:t.color,
+    atkCd:rnd()*0.4,hitT:0,kbT:0,kbx:0,kby:0,vx:0,vy:0,spikeCd:0,target:null});
+}
+function pickZType(){
+  const r=rnd();
+  if(day>=3&&r<0.10)return'brute';
+  if(day>=2&&r<0.30)return'runner';
+  return'walker';
+}
+function spawnFromList(){
+  if(zombies.length>=ZCAP)return;
+  const nestsAlive=[...objs.values()].filter(o=>o.type==='nest');
+  let px=-1,py=-1;
+  if(nestsAlive.length&&rnd()<0.45){
+    const n=rndPick(nestsAlive);
+    const p=findWalkableNear(n.x+rndInt(-2,2),n.y+rndInt(-2,2),4);
+    if(p){px=p.x;py=p.y;}
+  }
+  if(px<0){
+    const side=rndInt(0,3);
+    let x,y;
+    if(side===0){x=rndInt(0,TW-1);y=0;}
+    else if(side===1){x=rndInt(0,TW-1);y=TH-1;}
+    else if(side===2){x=0;y=rndInt(0,TH-1);}
+    else{x=TW-1;y=rndInt(0,TH-1);}
+    const p=findWalkableNear(x,y,12);
+    if(!p)return;
+    px=p.x;py=p.y;
+  }
+  spawnZombieAt(px+0.5,py+0.5,pickZType());
+}
+function killZombie(z){
+  kills++;
+  bloodFx(z.x,z.y);
+  const idx=zombies.indexOf(z);
+  if(idx>=0)zombies.splice(idx,1);
+}
+function attackTile(z,tx,ty){
+  if(tx<0||ty<0||tx>=TW||ty>=TH)return false;
+  const i=ty*TW+tx;
+  const b=blds.get(i);
+  if(b&&b.type!=='core'&&isBldSolid(b)){
+    b.hp-=z.bdmg;b.flash=0.1;
+    partFx(tx+0.5,ty+0.5,'#c8ccd0',2);
+    if(b.hp<=0){
+      if(b.user){if(b.user==='player')wakePlayer('💥 床被破坏了！');else b.user.sleeping=false;}
+      blds.delete(i);distDirty=true;SND.boom();
+      addMsg('💥 建筑被摧毁：'+BLD_DEFS[b.type].name);
+      partFx(tx+0.5,ty+0.5,'#8a8f94',8);
+    }
+    return true;
+  }
+  const o=objs.get(i);
+  if(o&&o.type==='rock'){
+    o.hp-=z.bdmg;
+    partFx(tx+0.5,ty+0.5,'#9aa0a8',2);
+    if(o.hp<=0){objs.delete(i);distDirty=true;partFx(tx+0.5,ty+0.5,'#9aa0a8',6);}
+    return true;
+  }
+  return false; // 树木不会被丧尸破坏，丧尸会绕行
+}
+function updateZombies(dt){
+  for(const z of zombies){
+    z.atkCd-=dt;z.hitT-=dt;z.kbT-=dt;z.spikeCd-=dt;
+    const zx=Math.floor(z.x),zy=Math.floor(z.y);
+    if(zx<0||zy<0||zx>=TW||zy>=TH){killZombie(z);continue;}
+    // 尖刺陷阱：踩踏伤害
+    if(zx>=0&&zy>=0&&zx<TW&&zy<TH){
+      const sb=blds.get(zy*TW+zx);
+      if(sb&&sb.type==='spike'&&z.spikeCd<=0){
+        z.spikeCd=0.6;z.hp-=8;z.hitT=0.1;sb.hp-=1;
+        partFx(z.x,z.y,'#c8ccd0',2);
+        if(sb.hp<=0){blds.delete(zy*TW+zx);distDirty=true;addMsg('💢 尖刺陷阱损坏了');}
+        if(z.hp<=0){killZombie(z);continue;}
+      }
+    }
+    // —— 仇恨系统：视野内有主角/守卫优先攻击，其次才是基地 ——
+    let t=z.target;
+    if(t&&t!==player&&!t.alive)t=null;
+    if(t){
+      const td=Math.hypot(t.x-z.x,t.y-z.y);
+      if(td>8)t=null;
+    }
+    if(!t){
+      let best=null,bd=5; // 5格视野
+      const pd=Math.hypot(player.x-z.x,player.y-z.y);
+      if(pd<bd){bd=pd;best=player;}
+      for(const s of survivors){
+        if(!s.alive)continue;
+        const sd=Math.hypot(s.x-z.x,s.y-z.y);
+        if(sd<bd){bd=sd;best=s;}
+      }
+      t=best;
+    }
+    z.target=t;
+    if(t){
+      const dx=t.x-z.x,dy=t.y-z.y,d=Math.hypot(dx,dy)||1;
+      const atkR=t===player?0.85:0.95;
+      if(d>atkR){
+        const sp=z.sp*(z.kbT>0?0.3:1);
+        let nx=z.x+dx/d*sp*dt,ny=z.y+dy/d*sp*dt;
+        if(z.kbT>0){nx+=z.kbx*z.kbT*4*dt;ny+=z.kby*z.kbT*4*dt;}
+        if(!isSolid(Math.floor(nx),zy))z.x=nx;
+        else if(z.atkCd<=0){attackTile(z,Math.floor(nx),zy);z.atkCd=z.atkInt;}
+        if(!isSolid(zx,Math.floor(ny)))z.y=ny;
+        else if(z.atkCd<=0){attackTile(z,zx,Math.floor(ny));z.atkCd=z.atkInt;}
+        z.vx=dx/d;z.vy=dy/d;
+      }else if(z.atkCd<=0){
+        z.atkCd=z.atkInt;
+        t.hp-=z.dmg;
+        bloodFx(t.x,t.y);
+        if(t===player){
+          hurtT=0.25;shake=Math.max(shake,0.3);
+          if(hurtSndT<=0){SND.hurt();hurtSndT=0.25;}
+          if(player.sleeping)wakePlayer('💥 你被丧尸惊醒了！');
+          if(player.hp<=0){player.hp=0;gameOver(false);return;}
+        }else{
+          if(t.sleeping){t.sleeping=false;const bd=bedOf(t);if(bd)bd.user=null;}
+          if(t.hp<=0){t.alive=false;z.target=null;addMsg('💀 '+t.name+' 被丧尸杀害了…');}
+        }
+      }
+      continue;
+    }
+    const di=dist[zy*TW+zx];
+    if(di===0){
+      if(z.atkCd<=0&&coreRef){
+        coreRef.hp-=z.bdmg;coreRef.flash=0.1;z.atkCd=z.atkInt;
+        if(coreSndT<=0){SND.hurt();coreSndT=0.25;}
+        shake=Math.max(shake,0.25);
+        if(coreRef.hp<=0){coreRef.hp=0;gameOver(false);return;}
+      }
+    }else{
+      let bx=-1,by=-1,bd=di;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+        if(!dx&&!dy)continue;
+        const nx=zx+dx,ny=zy+dy;
+        if(nx<0||ny<0||nx>=TW||ny>=TH)continue;
+        const d=dist[ny*TW+nx];
+        if(d<bd){bd=d;bx=nx;by=ny;}
+      }
+      if(bx>=0){
+        const mx=bx+0.5-z.x,my=by+0.5-z.y,m=Math.hypot(mx,my)||1;
+        let sp=z.sp*(z.kbT>0?0.3:1);
+        let nx=z.x+mx/m*sp*dt,ny=z.y+my/m*sp*dt;
+        if(z.kbT>0){nx+=z.kbx*z.kbT*4*dt;ny+=z.kby*z.kbT*4*dt;}
+        if(!isSolid(Math.floor(nx),zy))z.x=nx;
+        else if(z.atkCd<=0){attackTile(z,Math.floor(nx),zy);z.atkCd=z.atkInt;}
+        if(!isSolid(zx,Math.floor(ny)))z.y=ny;
+        else if(z.atkCd<=0){attackTile(z,zx,Math.floor(ny));z.atkCd=z.atkInt;}
+        z.vx=mx/m;z.vy=my/m;
+      }else{
+        if(z.atkCd<=0){
+          let done=false;
+          const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+          for(const d of dirs){
+            const nx=zx+d[0],ny=zy+d[1];
+            if(nx<0||ny<0||nx>=TW||ny>=TH)continue;
+            if(attackTile(z,nx,ny)){z.atkCd=z.atkInt;done=true;break;}
+          }
+          if(!done){
+            if(dist[zy*TW+zx]!==65535){
+              // 有路但暂时卡住（如被树围住）：随机挪动绕行，不破坏树木
+              const d=rndPick(dirs);
+              const nx=z.x+d[0]*z.sp*dt,ny=z.y+d[1]*z.sp*dt;
+              if(!isSolid(Math.floor(nx),zy))z.x=nx;
+              if(!isSolid(zx,Math.floor(ny)))z.y=ny;
+              z.vx=d[0];z.vy=d[1];
+            }else{
+              // 与基地不连通：直线硬冲
+              const mx=BASE.x+0.5-z.x,my=BASE.y+0.5-z.y,m=Math.hypot(mx,my)||1;
+              let nx=z.x+mx/m*z.sp*dt,ny=z.y+my/m*z.sp*dt;
+              if(!isSolid(Math.floor(nx),zy))z.x=nx;
+              else if(z.atkCd<=0){attackTile(z,Math.floor(nx),zy);z.atkCd=z.atkInt;}
+              if(!isSolid(zx,Math.floor(ny)))z.y=ny;
+              else if(z.atkCd<=0){attackTile(z,zx,Math.floor(ny));z.atkCd=z.atkInt;}
+              z.vx=mx/m;z.vy=my/m;
+            }
+          }
+        }
+      }
+      // 攻击玩家
+      if(z.atkCd<=0){
+        const pd=Math.hypot(player.x-z.x,player.y-z.y);
+        if(pd<0.85){
+          player.hp-=z.dmg;z.atkCd=z.atkInt;hurtT=0.25;shake=Math.max(shake,0.3);
+          if(player.sleeping)wakePlayer('💥 你被丧尸惊醒了！');
+          if(hurtSndT<=0){SND.hurt();hurtSndT=0.25;}
+          bloodFx(player.x,player.y);
+          if(player.hp<=0){player.hp=0;gameOver(false);return;}
+        }
+      }
+    }
+  }
+  sepZombies();
+}
+function sepZombies(){
+  if(zombies.length<2)return;
+  const buck=new Map();
+  for(const z of zombies){
+    const k=clamp(Math.floor(z.x),0,TW-1)+clamp(Math.floor(z.y),0,TH-1)*TW;
+    let a=buck.get(k);if(!a){a=[];buck.set(k,a);}a.push(z);
+  }
+  for(const z of zombies){
+    const zx=clamp(Math.floor(z.x),0,TW-1),zy=clamp(Math.floor(z.y),0,TH-1);
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      const a=buck.get((zx+dx)+(zy+dy)*TW);
+      if(!a)continue;
+      for(const o of a){
+        if(o===z)continue;
+        const ddx=z.x-o.x,ddy=z.y-o.y,d=ddx*ddx+ddy*ddy;
+        if(d<0.08&&d>0.0001){
+          const m=Math.sqrt(d),push=(0.28-m)*0.5;
+          z.x+=ddx/m*push;z.y+=ddy/m*push;
+        }
+      }
+    }
+  }
+}
+// ---------- 巢穴 ----------
+function destroyNest(i,o){
+  objs.delete(i);nestsDestroyed++;SND.boom();shake=Math.max(shake,0.5);
+  invAddMsg('metal',3);invAddMsg('ammo',10);invAddMsg('food',8);
+  for(let k=0;k<14;k++)partFx(o.x+0.5+rnd()*1.4-0.7,o.y+0.5+rnd()*1.4-0.7,'#6a2a7a',5);
+  const left=nestsTotal-nestsDestroyed;
+  addMsg('💥 丧尸巢穴被摧毁！战利品：金属+3 弹药+10 食物+8（剩余 '+left+' 个巢穴）');
+  if(left<=0)addMsg('🌟 所有巢穴已清除！撑过今晚，迎接胜利！');
+}
+function updateNests(dt){
+  for(const o of objs.values()){
+    if(o.type!=='nest')continue;
+    o.flash-=dt;
+    if(!isNight()){o.spawnCd=0;continue;} // 白天丧尸不活动，巢穴只在夜晚刷怪
+    o.spawnCd-=dt;
+    if(o.spawnCd<=0){
+      o.spawnCd=7;
+      let near=0;
+      for(const z of zombies){if(Math.hypot(z.x-o.x,z.y-o.y)<3)near++;}
+      const cap=3;
+      if(near<cap&&zombies.length<ZCAP){
+        const p=findWalkableNear(o.x+rndInt(-2,2),o.y+rndInt(-2,2),4);
+        if(p)spawnZombieAt(p.x+0.5,p.y+0.5,pickZType());
+      }
+    }
+  }
+}
+// ---------- 昼夜与尸潮 ----------
+function startNight(){
+  nightStarted=true;
+  const nestsAlive=countNests();
+  const total=Math.min(140,Math.round(5+day*2.4+5*nestsAlive+rndInt(0,4)));
+  spawnList=[];si=0;
+  for(let i=0;i<total;i++)spawnList.push({t:rnd()*Math.min(15,NIGHT_LEN*0.5)});
+  spawnList.sort((a,b)=>a.t-b.t);
+  SND.night();SND.horn();
+  addMsg('🌙 夜幕降临！尸潮来袭——数量 '+total+'，快回到家园防守！');
+}
+function morning(){
+  day++;tod=0;nightStarted=false;nightWarned=false;spawnList=[];si=0;
+  foodT=0;
+  if(zombies.length>0){zombies.length=0;addMsg('🌅 黎明到来，残留的尸潮退去了。');}
+  player.sleeping=false;
+  for(const b of blds.values()){if(b.type==='bed')b.user=null;}
+  for(const s of survivors){s.sleeping=false;if(s.alive)s.hp=Math.min(s.maxhp,s.hp+30);}
+  player.hp=Math.min(player.maxhp,player.hp+20);
+  saveGame();
+  addMsg('☀️ 第 '+day+' 天。白天没有丧尸，安心建设。');
+  if(nestsDestroyed>=nestsTotal){gameOver(true);return;}
+  if(day===2)addMsg('💡 床（夜里睡觉回血）、门（E开关）、箱子（储物）已加入建造列表！点击建筑可修补/拆除。');
+  if(day===3)addMsg('💡 点击已入队的幸存者可下达指令：采集 / 守卫 / 跟随。');
+}
+// ---------- 子弹 ----------
+function updateBullets(dt){
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i];
+    b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
+    let dead=b.life<=0||b.x<0||b.y<0||b.x>TW||b.y>TH;
+    if(!dead){
+      for(const z of zombies){
+        const dx=b.x-z.x,dy=b.y-z.y;
+        if(dx*dx+dy*dy<0.13){
+          z.hp-=b.dmg;z.hitT=0.08;bloodFx(z.x,z.y);
+          if(z.hp<=0)killZombie(z);
+          dead=true;break;
+        }
+      }
+    }
+    if(!dead){
+      for(const [oi,o] of objs){
+        if(o.type!=='nest')continue;
+        const dx=b.x-(o.x+0.5),dy=b.y-(o.y+0.5);
+        if(dx*dx+dy*dy<0.3){
+          o.hp-=b.dmg;o.flash=0.1;bloodFx(o.x+0.5,o.y+0.5);
+          if(o.hp<=0)destroyNest(oi,o);
+          dead=true;break;
+        }
+      }
+    }
+    if(dead)bullets.splice(i,1);
+  }
+}
+// ---------- 粒子与漂浮文字 ----------
+function partFx(x,y,color,n){
+  if(parts.length>500)return;
+  for(let i=0;i<(n||1);i++){
+    const a=rnd()*Math.PI*2,s=rnd()*1.5+0.5;
+    parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-rnd()*0.5,life:rnd()*0.5+0.2,max:0.7,color,size:rnd()*0.09+0.05});
+  }
+}
+function bloodFx(x,y){partFx(x,y,'#a02020',4);}
+function textFx(x,y,txt,color){
+  texts.push({x:x*TS,y:y*TS-10,txt,color,age:0});
+}
+function updateFx(dt){
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i];
+    p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
+    if(p.life<=0)parts.splice(i,1);
+  }
+  for(let i=texts.length-1;i>=0;i--){
+    const t=texts[i];
+    t.age+=dt;t.y-=22*dt;
+    if(t.age>1.1)texts.splice(i,1);
+  }
+  for(const m of msgs)m.age+=dt;
+  for(let i=msgs.length-1;i>=0;i--)if(msgs[i].age>6)msgs.splice(i,1);
+}
+// ---------- 渲染 ----------
+function terrColor(t,x,y){
+  const k=0.92+hash2(x,y,555)*0.16;
+  switch(t){
+    case T_GRASS:return 'rgb('+(93*k|0)+','+(140*k|0)+','+(60*k|0)+')';
+    case T_FOREST:return 'rgb('+(50*k|0)+','+(82*k|0)+','+(38*k|0)+')';
+    case T_WATER:return 'rgb('+(38*k|0)+','+(96*k|0)+','+(160*k|0)+')';
+    case T_ROAD:return 'rgb('+(107*k|0)+','+(107*k|0)+','+(99*k|0)+')';
+    case T_RUIN:return 'rgb('+(118*k|0)+','+(112*k|0)+','+(100*k|0)+')';
+    case T_SAND:return 'rgb('+(188*k|0)+','+(172*k|0)+','+(120*k|0)+')';
+  }
+  return '#000';
+}
+function barAt(px,py,w,hp,maxhp,color){
+  if(hp>=maxhp)return;
+  const g=ctx;
+  g.fillStyle='rgba(0,0,0,.55)';g.fillRect(px-w/2-1,py-1,w+2,6);
+  g.fillStyle=color||'#4caf50';g.fillRect(px-w/2,py,w*clamp(hp/maxhp,0,1),4);
+}
+function drawObj(o,px,py){
+  const g=ctx;
+  if(o.type==='tree'){
+    const sway=Math.sin(gameT*1.5+o.x*3)*1.5;
+    g.fillStyle='#5a4030';g.fillRect(px-3,py-8,6,12);
+    g.fillStyle='#2c5e26';g.beginPath();g.arc(px+sway,py-12,11,0,7);g.fill();
+    g.fillStyle='#3f7a35';g.beginPath();g.arc(px+sway-2,py-14,6,0,7);g.fill();
+  }else if(o.type==='rock'){
+    g.fillStyle='#767b82';g.beginPath();g.arc(px,py+2,10,0,7);g.fill();
+    g.fillStyle='#8b9098';g.beginPath();g.arc(px-3,py-1,7,0,7);g.fill();
+    g.strokeStyle='#565b62';g.stroke();
+  }else if(o.type==='scrap'){
+    g.fillStyle='#8a939e';g.fillRect(px-7,py-7,14,14);
+    g.strokeStyle='#5d6671';g.strokeRect(px-7,py-7,14,14);
+    g.fillStyle='#c8d2dc';g.fillRect(px-3,py-3,4,4);
+  }else if(o.type==='crate'){
+    g.fillStyle='#8a5a2b';g.fillRect(px-12,py-10,24,20);
+    g.strokeStyle='#5f3d1c';g.strokeRect(px-12,py-10,24,20);
+    g.strokeStyle='#c9a15a';g.beginPath();
+    g.moveTo(px-12,py-10);g.lineTo(px+12,py+10);
+    g.moveTo(px+12,py-10);g.lineTo(px-12,py+10);g.stroke();
+  }else if(o.type==='nest'){
+    const p=1+Math.sin(gameT*3+o.x*7)*0.1;
+    g.fillStyle='#241129';g.beginPath();g.arc(px,py,17*p,0,7);g.fill();
+    g.fillStyle='#3d1f4d';g.beginPath();g.arc(px,py-2,14*p,0,7);g.fill();
+    const e=Math.sin(gameT*4)*2;
+    g.fillStyle='#ff3030';g.beginPath();g.arc(px-5,py-5+e,2.5,0,7);g.fill();
+    g.beginPath();g.arc(px+5,py-5-e,2.5,0,7);g.fill();
+    if(o.flash>0){g.fillStyle='rgba(255,255,255,'+o.flash+')';g.beginPath();g.arc(px,py,15,0,7);g.fill();}
+    barAt(px,py-24,26,o.hp,150,'#e33');
+  }
+}
+function drawBld(b,px,py){
+  const g=ctx;
+  if(b.flash>0){g.fillStyle='rgba(255,255,255,'+clamp(b.flash*3,0,0.6)+')';g.fillRect(px,py,TS,TS);}
+  if(b.type==='wall_wood'){
+    g.fillStyle='#6e4a24';g.fillRect(px+1,py+1,TS-2,TS-2);
+    g.strokeStyle='#4a3014';g.strokeRect(px+1.5,py+1.5,TS-3,TS-3);
+    g.strokeStyle='#7d5a30';g.beginPath();g.moveTo(px+3,py+10);g.lineTo(px+29,py+10);g.moveTo(px+3,py+21);g.lineTo(px+29,py+21);g.stroke();
+  }else if(b.type==='wall_stone'){
+    g.fillStyle='#7b8088';g.fillRect(px+1,py+1,TS-2,TS-2);
+    g.strokeStyle='#4c5058';g.strokeRect(px+1.5,py+1.5,TS-3,TS-3);
+    g.strokeStyle='#5a5e66';g.beginPath();g.moveTo(px+3,py+16);g.lineTo(px+29,py+16);g.moveTo(px+16,py+3);g.lineTo(px+16,py+16);g.moveTo(px+8,py+16);g.lineTo(px+8,py+29);g.moveTo(px+24,py+16);g.lineTo(px+24,py+29);g.stroke();
+  }else if(b.type==='spike'){
+    g.fillStyle='#9aa0a8';
+    for(let k=0;k<4;k++){
+      const sx=px+4+k*7;
+      g.beginPath();g.moveTo(sx,py+6);g.lineTo(sx+3.5,py+24);g.lineTo(sx-3.5,py+24);g.closePath();g.fill();
+    }
+  }else if(b.type==='turret'){
+    g.fillStyle='#3d444d';g.beginPath();g.arc(px+16,py+16,12,0,7);g.fill();
+    g.fillStyle='#5a6570';g.beginPath();g.arc(px+16,py+16,9,0,7);g.fill();
+    g.save();g.translate(px+16,py+16);g.rotate(b.ang);
+    g.fillStyle='#232830';g.fillRect(0,-2.5,15,5);g.restore();
+    if(b.flash>0){g.fillStyle='#ffd76a';g.beginPath();g.arc(px+16+Math.cos(b.ang)*14,py+16+Math.sin(b.ang)*14,3,0,7);g.fill();}
+    g.fillStyle='#ff5050';g.beginPath();g.arc(px+16,py+16,2,0,7);g.fill();
+  }else if(b.type==='furnace'){
+    g.fillStyle='#4a4a52';g.fillRect(px+3,py+3,TS-6,TS-6);
+    g.strokeStyle='#2e2e34';g.strokeRect(px+3.5,py+3.5,TS-7,TS-7);
+    const glow=0.4+Math.sin(gameT*5)*0.2;
+    if(b.prog>0){g.fillStyle='rgba(255,140,40,'+glow+')';g.fillRect(px+10,py+20,12,8);}
+    g.fillStyle='#333';g.fillRect(px+22,py-5,6,9);
+  }else if(b.type==='farm'){
+    g.fillStyle='#6b4a2a';g.fillRect(px+2,py+2,TS-4,TS-4);
+    g.strokeStyle='#4a3018';g.strokeRect(px+2.5,py+2.5,TS-5,TS-5);
+    if(b.planted){
+      const st=b.stage;
+      if(st===0){g.fillStyle='#7a8f4a';for(let k=0;k<3;k++)g.fillRect(px+6+k*8,py+12+k*3,4,4);}
+      else if(st===1){g.fillStyle='#5f9e3a';for(let k=0;k<3;k++)g.fillRect(px+6+k*8,py+8+k*2,5,8);}
+      else if(st===2){g.fillStyle='#4f8a30';for(let k=0;k<3;k++){g.fillRect(px+5+k*9,py+6+k*2,7,12);}}
+      else{
+        g.fillStyle='#d8b84a';for(let k=0;k<3;k++){g.fillRect(px+5+k*9,py+6,7,14);}
+        g.strokeStyle='rgba(255,215,106,'+(0.4+Math.sin(gameT*4)*0.3)+')';g.strokeRect(px+1,py+1,TS-2,TS-2);
+      }
+    }else{
+      g.strokeStyle='#8a6a3a';g.beginPath();
+      g.moveTo(px+6,py+26);g.lineTo(px+10,py+12);g.moveTo(px+16,py+26);g.lineTo(px+16,py+12);g.moveTo(px+26,py+26);g.lineTo(px+22,py+12);g.stroke();
+    }
+  }else if(b.type==='bed'){
+    g.fillStyle='#7a5a3a';g.fillRect(px+2,py+4,TS-4,20);
+    g.fillStyle='#c9a15a';g.fillRect(px+2,py+2,TS-4,6);
+    g.fillStyle='#e8d8c0';g.fillRect(px+4,py+7,TS-8,13);
+    g.strokeStyle='#5a4030';g.strokeRect(px+2.5,py+2.5,TS-5,21);
+    if(b.user){g.fillStyle='rgba(200,220,255,.6)';g.font='11px sans-serif';g.textAlign='center';g.fillText('Zzz',px+16,py-4);}
+  }else if(b.type==='door'){
+    g.fillStyle='#6e4a24';g.fillRect(px+2,py+2,TS-4,TS-4);
+    g.strokeStyle='#4a3014';g.strokeRect(px+2.5,py+2.5,TS-5,TS-5);
+    if(b.open){
+      g.fillStyle='#8a6436';g.fillRect(px+TS-8,py+3,5,TS-6);
+      g.strokeStyle='rgba(200,255,180,.7)';g.strokeRect(px+3.5,py+3.5,TS-7,TS-7);
+    }else{
+      g.fillStyle='#8a6436';g.fillRect(px+4,py+4,TS-8,TS-8);
+      g.strokeStyle='#5a4030';g.strokeRect(px+4.5,py+4.5,TS-9,TS-9);
+      g.fillStyle='#d8b84a';g.fillRect(px+TS-8,py+12,3,3);
+    }
+  }else if(b.type==='chest'){
+    g.fillStyle='#7a4a22';g.fillRect(px+3,py+6,TS-6,TS-8);
+    g.strokeStyle='#4a2c12';g.strokeRect(px+3.5,py+6.5,TS-7,TS-9);
+    g.fillStyle='#a56a34';g.fillRect(px+3,py+3,TS-6,5);
+    g.fillStyle='#d8b84a';g.fillRect(px+TS/2-1.5,py+11,3,TS-17);
+  }else if(b.type==='core'){
+    const p=1+Math.sin(gameT*3)*0.05;
+    g.fillStyle='#1d3557';g.fillRect(px+3,py+3,TS-6,TS-6);
+    g.strokeStyle='#7fbfef';g.strokeRect(px+3.5,py+3.5,TS-7,TS-7);
+    g.fillStyle='#4a90d9';g.beginPath();g.arc(px+16,py+16,8*p,0,7);g.fill();
+    g.strokeStyle='rgba(127,191,239,.6)';g.beginPath();g.arc(px+16,py+16,12+Math.sin(gameT*2)*1.5,0,7);g.stroke();
+    g.fillStyle='#7fbfef';g.fillRect(px+15,py-2,2,6);
+  }
+  barAt(px+16,py-4,26,b.hp,b.maxhp,b.type==='core'?'#4a90d9':'#4caf50');
+}
+function drawZombie(z,px,py){
+  const g=ctx;
+  g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(px,py+4,z.rad*TS*0.9,z.rad*TS*0.45,0,0,7);g.fill();
+  const r=z.rad*TS;
+  g.fillStyle=z.color;g.beginPath();g.arc(px,py,r,0,7);g.fill();
+  g.strokeStyle='rgba(0,0,0,.5)';g.lineWidth=2;g.stroke();
+  if(z.type==='brute'){
+    g.fillStyle='#3a1515';g.beginPath();g.moveTo(px-r*0.7,py-r*0.6);g.lineTo(px-r*1.3,py-r*1.5);g.lineTo(px-r*0.2,py-r*0.9);g.closePath();g.fill();
+    g.beginPath();g.moveTo(px+r*0.7,py-r*0.6);g.lineTo(px+r*1.3,py-r*1.5);g.lineTo(px+r*0.2,py-r*0.9);g.closePath();g.fill();
+  }
+  const a=Math.atan2(z.vy||1,z.vx||0);
+  g.fillStyle='#e8e8e0';
+  g.beginPath();g.arc(px+Math.cos(a)*r*0.4-r*0.22,py+Math.sin(a)*r*0.4-r*0.15,r*0.16,0,7);g.fill();
+  g.beginPath();g.arc(px+Math.cos(a)*r*0.4+r*0.22,py+Math.sin(a)*r*0.4-r*0.15,r*0.16,0,7);g.fill();
+  if(z.hitT>0){g.fillStyle='rgba(255,255,255,'+clamp(z.hitT*5,0,0.7)+')';g.beginPath();g.arc(px,py,r,0,7);g.fill();}
+  barAt(px,py-r-6,22,z.hp,z.maxhp,'#4caf50');
+}
+function darkA(){
+  if(tod>=DAY_LEN)return 0.62;
+  const dusk=clamp((DAY_LEN-tod)/14,0,1),dawn=clamp(tod/8,0,1);
+  const f=Math.min(1-dusk,1-dawn);
+  return 0.10+(0.62-0.10)*f;
+}
+function applyDarkness(a){
+  if(a<=0.02)return;
+  if(!lightCv){
+    lightCv=document.createElement('canvas');
+    lightCv.width=W2;lightCv.height=H2;
+    lightCtx=lightCv.getContext('2d');
+    if(!lightCtx)return;
+  }
+  const g=lightCtx;
+  g.globalCompositeOperation='source-over';
+  g.clearRect(0,0,W2,H2);
+  g.fillStyle='rgba(6,10,34,'+a+')';
+  g.fillRect(0,0,W2,H2);
+  g.globalCompositeOperation='destination-out';
+  const punch=(px,py,r)=>{
+    if(px+r<0||px-r>W2||py+r<0||py-r>H2)return;
+    const gr=g.createRadialGradient(px,py,0,px,py,r);
+    gr.addColorStop(0,'rgba(0,0,0,1)');
+    gr.addColorStop(0.55,'rgba(0,0,0,0.75)');
+    gr.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=gr;
+    g.fillRect(px-r,py-r,r*2,r*2);
+  };
+  punch(player.x*TS-cam.x,player.y*TS-cam.y,240);
+  punch(BASE.x*TS+16-cam.x,BASE.y*TS+16-cam.y,190);
+  for(const b of blds.values()){
+    if(b.type==='turret')punch(b.x*TS+16-cam.x,b.y*TS+16-cam.y,110);
+    else if(b.type==='furnace'&&b.prog>0)punch(b.x*TS+16-cam.x,b.y*TS+16-cam.y,80);
+  }
+  ctx.drawImage(lightCv,0,0);
+}
+function drawMinimap(){
+  mmFrame++;
+  if(mmFrame%6!==0)return;
+  if(!mmImg)mmImg=ctx.createImageData(160,160);
+  const d=mmImg.data;
+  for(let y=0;y<TH;y++)for(let x=0;x<TW;x++){
+    const i=y*TW+x,p=(y*160+x)*4;
+    let r=6,gg=8,b=10;
+    if(fog[i]){
+      const t=tiles[i];
+      if(t===T_WATER){r=30;gg=70;b=130;}
+      else if(t===T_FOREST){r=20;gg=50;b=25;}
+      else if(t===T_ROAD){r=70;gg=70;b=66;}
+      else if(t===T_RUIN){r=88;gg=84;b=76;}
+      else{r=45;gg=80;b=35;}
+    }
+    d[p]=r;d[p+1]=gg;d[p+2]=b;d[p+3]=255;
+  }
+  const put=(x,y,r,gg,b)=>{if(x<0||y<0||x>=160||y>=160)return;const p=(y*160+x)*4;d[p]=r;d[p+1]=gg;d[p+2]=b;d[p+3]=255;};
+  for(const [i,o] of objs){
+    const x=i%TW,y=(i/TW)|0;
+    if(o.type==='nest'){put(x,y,255,40,40);put(x+1,y,255,40,40);put(x,y+1,255,40,40);put(x+1,y+1,255,40,40);}
+  }
+  for(const i of blds.keys()){
+    const x=i%TW,y=(i/TW)|0;put(x,y,235,235,235);
+  }
+  for(const z of zombies){put(Math.floor(z.x),Math.floor(z.y),255,80,80);}
+  for(const s of survivors){if(s.alive&&!s.recruited)put(Math.floor(s.x),Math.floor(s.y),200,120,255);}
+  put(Math.floor(player.x),Math.floor(player.y),255,255,80);
+  put(Math.floor(player.x)+1,Math.floor(player.y),255,255,80);
+  put(Math.floor(player.x),Math.floor(player.y)+1,255,255,80);
+  put(Math.floor(player.x)+1,Math.floor(player.y)+1,255,255,80);
+  const ox=W2-170,oy=H2-170;
+  ctx.putImageData(mmImg,ox,oy);
+  ctx.strokeStyle='rgba(255,255,255,.3)';ctx.strokeRect(ox-0.5,oy-0.5,161,161);
+  ctx.strokeStyle='rgba(255,255,255,.6)';ctx.strokeRect(ox+cam.x/TS,oy+cam.y/TS,40,22.5);
+}
+function render(){
+  const g=ctx;
+  g.setTransform(1,0,0,1,0,0);
+  g.fillStyle='#000';g.fillRect(0,0,W2,H2);
+  if(!player){return;}
+  const shx=shake>0?(rnd()-0.5)*shake*10:0,shy=shake>0?(rnd()-0.5)*shake*10:0;
+  cam.x=clamp(player.x*TS+shx-W2/2,0,W-W2);
+  cam.y=clamp(player.y*TS+shy-H2/2,0,H-H2);
+  g.save();
+  g.translate(-Math.round(cam.x),-Math.round(cam.y));
+  const x0=Math.max(0,Math.floor(cam.x/TS)-1),y0=Math.max(0,Math.floor(cam.y/TS)-1);
+  const x1=Math.min(TW-1,Math.ceil((cam.x+W2)/TS)+1),y1=Math.min(TH-1,Math.ceil((cam.y+H2)/TS)+1);
+  // 地形+迷雾
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    const i=y*TW+x;
+    if(!fog[i]){g.fillStyle='#05070c';g.fillRect(x*TS,y*TS,TS,TS);continue;}
+    g.fillStyle=terrColor(tiles[i],x,y);
+    g.fillRect(x*TS,y*TS,TS,TS);
+    if(tiles[i]===T_WATER&&((x+y+Math.floor(gameT*2))&1)===0){
+      g.fillStyle='rgba(255,255,255,.08)';g.fillRect(x*TS,y*TS,TS,TS);
+    }
+  }
+  // 物件
+  for(const o of objs.values()){
+    if(o.x<x0-1||o.x>x1+1||o.y<y0-1||o.y>y1+1)continue;
+    if(!fog[o.y*TW+o.x])continue;
+    drawObj(o,o.x*TS+16,o.y*TS+16);
+  }
+  // 建筑
+  for(const b of blds.values()){
+    if(b.x<x0-1||b.x>x1+1||b.y<y0-1||b.y>y1+1)continue;
+    if(!fog[b.y*TW+b.x])continue;
+    drawBld(b,b.x*TS,b.y*TS);
+  }
+  // 丧尸
+  for(const z of zombies){
+    const zi=Math.floor(z.y)*TW+Math.floor(z.x);
+    if(zi>=0&&zi<TW*TH&&!fog[zi])continue;
+    const px=z.x*TS,py=z.y*TS;
+    if(px<cam.x-40||px>cam.x+W2+40||py<cam.y-40||py>cam.y+H2+40)continue;
+    drawZombie(z,px,py);
+  }
+  // 幸存者
+  for(const s of survivors){
+    if(!s.alive)continue;
+    const px=s.x*TS,py=s.y*TS;
+    if(px<cam.x-40||px>cam.x+W2+40||py<cam.y-40||py>cam.y+H2+40)continue;
+    g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.ellipse(px,py+8,8,4,0,0,7);g.fill();
+    g.fillStyle=s.recruited?'#3f9e6a':'#8a6a9e';
+    g.beginPath();g.arc(px,py,10,0,7);g.fill();
+    g.strokeStyle='rgba(0,0,0,.4)';g.lineWidth=2;g.stroke();
+    g.fillStyle='#fff';g.fillRect(px-5,py-12,10,4);
+    g.fillStyle='#333';
+    g.save();g.translate(px,py);g.rotate(s.ang);g.fillRect(6,-1.5,12,3);g.restore();
+    if(!s.recruited){
+      g.fillStyle='#ffd76a';g.font='bold 16px sans-serif';g.textAlign='center';
+      g.fillText('!',px,py-20+Math.sin(gameT*3)*3);
+    }else{
+      g.font='12px sans-serif';g.textAlign='center';
+      if(s.sleeping){g.fillStyle='#cfe0ff';g.fillText('Zzz',px,py-22);}
+      else if(s.mode==='gather'){g.fillStyle='#ffe08a';g.fillText('🌾',px,py-20);}
+      else if(s.mode==='guard'){g.fillStyle='#9fc3ff';g.fillText('🛡️',px,py-20);}
+    }
+    barAt(px,py-18,20,s.hp,s.maxhp,'#3f9e6a');
+  }
+  // 玩家
+  {
+    const px=player.x*TS,py=player.y*TS;
+    g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(px,py+10,9,5,0,0,7);g.fill();
+    g.fillStyle='#3b7dd8';g.beginPath();g.arc(px,py,12,0,7);g.fill();
+    g.strokeStyle='#0f2f55';g.lineWidth=2;g.stroke();
+    g.fillStyle='#e8f0ff';g.beginPath();g.arc(px-3,py-2,2.5,0,7);g.fill();
+    g.beginPath();g.arc(px+3,py-2,2.5,0,7);g.fill();
+    g.fillStyle='#232830';
+    g.save();g.translate(px,py);g.rotate(player.aim);g.fillRect(8,-2.5,16,5);g.restore();
+    if(fireCd>0.17){g.fillStyle='#ffd76a';g.beginPath();g.arc(px+Math.cos(player.aim)*24,py+Math.sin(player.aim)*24,4,0,7);g.fill();}
+    if(player.sleeping){g.fillStyle='#cfe0ff';g.font='bold 13px sans-serif';g.textAlign='center';g.fillText('💤',px,py-30+Math.sin(gameT*3)*2);}
+    barAt(px,py-20,24,player.hp,player.maxhp,'#3b7dd8');
+  }
+  // 子弹
+  for(const b of bullets){
+    g.fillStyle='#ffe08a';
+    g.fillRect(b.x*TS-2,b.y*TS-2,4,4);
+  }
+  // 粒子
+  for(const p of parts){
+    g.globalAlpha=clamp(p.life/p.max,0,1);
+    g.fillStyle=p.color;
+    g.fillRect(p.x*TS-p.size*TS/2,p.y*TS-p.size*TS/2,p.size*TS,p.size*TS);
+  }
+  g.globalAlpha=1;
+  // 漂浮文字
+  g.font='bold 13px sans-serif';g.textAlign='center';
+  for(const t of texts){
+    g.globalAlpha=clamp(1-t.age/1.1,0,1);
+    g.fillStyle='rgba(0,0,0,.6)';g.fillText(t.txt,t.x+1,t.y+1);
+    g.fillStyle=t.color;g.fillText(t.txt,t.x,t.y);
+  }
+  g.globalAlpha=1;
+  g.restore();
+  // 建造幽灵预览
+  if(buildType&&state==='play'&&!paused){
+    const mt=mouseTile();
+    const ok=canPlaceAt(mt.x,mt.y);
+    g.fillStyle=ok?'rgba(80,255,120,.35)':'rgba(255,60,60,.35)';
+    g.fillRect(mt.x*TS-cam.x,mt.y*TS-cam.y,TS,TS);
+    g.strokeStyle=ok?'#7fff9f':'#ff6f6f';
+    g.strokeRect(mt.x*TS-cam.x+0.5,mt.y*TS-cam.y+0.5,TS-1,TS-1);
+    if(buildType==='turret'){
+      g.strokeStyle='rgba(255,215,106,.4)';
+      g.beginPath();g.arc(mt.x*TS+16-cam.x,mt.y*TS+16-cam.y,7*TS,0,7);g.stroke();
+    }
+  }
+  // 夜晚光照（离屏遮罩挖洞，不再擦掉世界画面）
+  applyDarkness(darkA());
+  // 受伤红晕
+  if(hurtT>0){
+    g.fillStyle='rgba(180,30,20,'+clamp(hurtT*1.6,0,0.5)+')';
+    g.fillRect(0,0,W2,H2);
+  }
+  drawMinimap();
+  // 消息
+  g.font='12px sans-serif';g.textAlign='left';
+  let my=32;
+  for(const m of msgs){
+    g.globalAlpha=clamp(1.4-m.age/6,0,1);
+    g.fillStyle='rgba(0,0,0,.5)';g.fillText(m.txt,11,my+1);
+    g.fillStyle='#cfe0c0';g.fillText(m.txt,10,my);
+    my+=17;
+  }
+  g.globalAlpha=1;
+  if(paused&&state==='play'){
+    g.fillStyle='rgba(0,0,0,.4)';g.fillRect(0,0,W2,H2);
+    g.fillStyle='#fff';g.font='bold 28px sans-serif';g.textAlign='center';
+    g.fillText('⏸ 已暂停（按 P 继续）',W2/2,H2/2);
+  }
+}
+function mouseTile(){
+  const scale=1280/(canvas.getBoundingClientRect().width||1280);
+  const mx=(mouse.x*scale+cam.x)/TS,my=(mouse.y*scale+cam.y)/TS;
+  return{x:Math.floor(mx),y:Math.floor(my)};
+}
+function canPlaceAt(tx,ty){
+  if(tx<0||ty<0||tx>=TW||ty>=TH)return false;
+  const i=ty*TW+tx;
+  if(!PASS[tiles[i]])return false;
+  if(objs.has(i))return false;
+  if(blds.has(i))return false;
+  return canAfford(BLD_DEFS[buildType].cost);
+}
+// ---------- 主循环 ----------
+function sim(dt){
+  gameT+=dt;startT+=dt;
+  if(state!=='play')return;
+  lowAmmoT-=dt;turretSndT-=dt;coreSndT-=dt;hurtSndT-=dt;
+  hurtT-=dt;shake=Math.max(0,shake-dt*1.5);
+  // 教程提示
+  for(const t of tuts){
+    if(!t.done&&startT>=t.t){t.done=true;addMsg(t.txt);}
+  }
+  // 昼夜
+  if(!nightStarted&&!isNight()&&tod>DAY_LEN-12&&!nightWarned){
+    nightWarned=true;SND.horn();addMsg('⚠️ 夜晚将至！尸潮即将来袭，回到核心附近防守！');
+  }
+  tod+=dt;
+  if(tod>=DAY_LEN&&!nightStarted)startNight();
+  if(tod>=DAY_LEN+NIGHT_LEN)morning();
+  if(nightStarted&&isNight()){
+    const nt=tod-DAY_LEN;
+    while(si<spawnList.length&&spawnList[si].t<=nt){spawnFromList();si++;}
+  }
+  playerUpdate(dt);
+  if(interactCd<=0&&keys.KeyE){doInteract();interactCd=0.25;}
+  updateBuildings(dt);
+  updateNests(dt);
+  updateZombies(dt);
+  updateBullets(dt);
+  updateSurvivors(dt);
+  updateFx(dt);
+  revealFog();
+  distTimer-=dt;
+  if(distDirty||distTimer<=0){recomputeDist();distDirty=false;distTimer=1.2;}
+  hudTick();
+  refreshBar();
+}
+function frame(){
+  const now=performance.now();
+  let dt=(now-lastT)/1000;lastT=now;
+  if(dt>0.1)dt=0.1;
+  if(dt<0)dt=0;
+  if(!paused&&state==='play')sim(dt*timeScale);
+  else if(state==='play'){hudTick();}
+  render();
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(frame);
+}
+// ---------- 输入 ----------
+function onMouseDown(e){
+  const rect=canvas.getBoundingClientRect();
+  const scale=1280/(rect.width||1280);
+  mouse.x=(e.clientX-rect.left)*scale;
+  mouse.y=(e.clientY-rect.top)*scale;
+  if(state!=='play')return;
+  if(e.target!==canvas)return;
+  audio();
+  if(e.button===0){
+    if(buildType){tryPlace(mouseTile().x,mouseTile().y);return;}
+    if(demolish){demolishAt(mouseTile().x,mouseTile().y);return;}
+    const w=mouseWorld();
+    // 点击幸存者 → 指令面板
+    for(const s of survivors){
+      if(s.alive&&s.recruited&&Math.hypot(s.x-w.x,s.y-w.y)<0.9){openSurvInfo(s);return;}
+    }
+    // 点击建筑 → 信息面板（附近有丧尸时优先射击）
+    const b=findBldAt(w.x,w.y);
+    if(b){
+      if(!nearestZombie(b.x+0.5,b.y+0.5,4)){openBldInfo(b);return;}
+    }
+    mouse.down=true;
+  }else if(e.button===2){
+    melee();
+  }
+}
+function mouseWorld(){
+  const rect=canvas.getBoundingClientRect();
+  const scale=1280/(rect.width||1280);
+  return{x:(mouse.x*scale+cam.x)/TS,y:(mouse.y*scale+cam.y)/TS};
+}
+function findBldAt(wx,wy){
+  let best=null,bd=0.81;
+  for(const b of blds.values()){
+    const d=(b.x+0.5-wx)*(b.x+0.5-wx)+(b.y+0.5-wy)*(b.y+0.5-wy);
+    if(d<bd){bd=d;best=b;}
+  }
+  return best;
+}
+function onMouseUp(e){
+  if(e.button===0)mouse.down=false;
+}
+function onMouseMove(e){
+  const rect=canvas.getBoundingClientRect();
+  const scale=1280/(rect.width||1280);
+  mouse.x=(e.clientX-rect.left)*scale;
+  mouse.y=(e.clientY-rect.top)*scale;
+}
+function onKeyDown(e){
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
+  keys[e.code]=true;
+  if(state!=='play')return;
+  if(e.code==='KeyB'){if(!panelInfo&&!panelSurv&&!panelChest&&!buildPanelOpen)toggleBackpack();return;}
+  if(e.code==='KeyP'){paused=!paused;return;}
+  if(e.code==='Escape'){
+    if(panelChest)closeChestPanel();
+    else if(panelInfo)closeInfo();
+    else if(panelSurv)closeSurvInfo();
+    else if(buildPanelOpen)toggleBuildPanel();
+    else if(bpOpen)toggleBackpack();
+    else paused=!paused;
+    return;
+  }
+  if(e.code==='KeyR'){demolish=!demolish;buildType=null;addMsg(demolish?'🧨 拆除模式：左键点击建筑':'拆除模式关闭');return;}
+  if(e.code==='KeyT'){timeScale=(timeScale===1?2:1);addMsg('⏩ 速度 ×'+timeScale);return;}
+  if(e.code==='KeyF'){useMed();return;}
+  if(e.code.startsWith('Digit')){
+    const n=parseInt(e.code.slice(5),10);
+    if(n>=1&&n<=BUILD_ORDER.length){const t=BUILD_ORDER[n-1];buildType=(buildType===t?null:t);demolish=false;audio();}
+  }
+  if(e.code==='Space'){audio();melee();}
+}
+function onKeyUp(e){keys[e.code]=false;}
+// ---------- 游戏流程 ----------
+function newGame(){
+  rngState=20240607;
+  tiles=new Uint8Array(TW*TH);
+  fog=new Uint8Array(TW*TH);
+  dist=new Uint16Array(TW*TH);
+  zombies.length=0;bullets.length=0;parts.length=0;texts.length=0;msgs.length=0;
+  kills=0;cratesOpened=0;nestsDestroyed=0;
+  day=1;tod=0;timeScale=1;paused=false;nightStarted=false;nightWarned=false;
+  spawnList=[];si=0;
+  buildType=null;demolish=false;
+  interactCd=0;fireCd=0;meleeCd=0;medCd=0;lowAmmoT=0;turretSndT=0;foodT=0;
+  shake=0;hurtT=0;startT=0;gameT=0;
+  bp=Array.from({length:24},()=>({id:null,n:0}));
+  equip={gun:'pistol',melee:'machete'};
+  invAdd('wood',12);invAdd('stone',8);invAdd('food',10);invAdd('ammo',20);invAdd('seeds',4);invAdd('medkit',1);
+  invAdd('pistol',1);invAdd('machete',1);
+  bpOpen=false;$('bpanel').className='hidden';
+  panelInfo=null;panelSurv=null;panelChest=null;buildPanelOpen=false;
+  $('infopanel').className='hidden';$('buildpanel').className='hidden';$('chestpanel').className='hidden';
+  genWorld();
+  player={x:BASE.x+2.5,y:BASE.y+1.5,hp:100,maxhp:100,aim:0,sleeping:false};
+  addBuilding('core',BASE.x,BASE.y);
+  recomputeDist();distDirty=false;
+  revealFog();
+  tuts=[
+    {t:1,txt:'👋 欢迎来到废土！白天没有丧尸，WASD移动，左键射击，空格/右键近战。',done:false},
+    {t:8,txt:'🪓 按住 E 采集树木与岩石，收集木材和石头。',done:false},
+    {t:20,txt:'🎒 按 B 打开背包：所有物资与武器都在里面，点击武器可装备/切换。',done:false},
+    {t:40,txt:'🔨 点击下方按钮建造围墙与尖刺陷阱，保护家园核心（蓝点）。',done:false},
+    {t:70,txt:'⚙️ 建造熔炉：石头+木头→金属；金属→子弹与哨戒塔（自动射击）。',done:false},
+    {t:85,txt:'⚠️ 夜晚将至！尸潮会从地图边缘和红色巢穴涌来！',done:false},
+  ];
+  $('overlay').className='hidden';
+  state='play';
+  addMsg('🏠 目标：摧毁全部 '+nestsTotal+' 个丧尸巢穴，并活过当晚。小地图红点为巢穴。');
+}
+function gameOver(win){
+  if(state==='end')return;
+  state='end';paused=false;
+  bpOpen=false;panelInfo=null;panelSurv=null;panelChest=null;buildPanelOpen=false;
+  try{$('bpanel').className='hidden';$('infopanel').className='hidden';$('buildpanel').className='hidden';$('chestpanel').className='hidden';}catch(e){}
+  const score=day*100+kills*10+nestsDestroyed*150+cratesOpened*20;
+  try{if(win)localStorage.removeItem(SAVE_KEY);}catch(e){}
+  const p=$('panel');
+  p.innerHTML=
+    '<h1>'+(win?'🏆 胜利！':'💀 家园陷落')+'</h1>'+
+    '<p style="text-align:center">'+(win?'你摧毁了所有巢穴，废土终于迎来了黎明。':'核心被摧毁……但废土从不缺少重来一次的机会。')+'</p>'+
+    '<h2>📊 本次战绩</h2>'+
+    '<p>存活天数：'+day+' 天<br>击杀丧尸：'+kills+'<br>摧毁巢穴：'+nestsDestroyed+'/'+nestsTotal+
+    '<br>搜刮物资箱：'+cratesOpened+'<br><b>总分：'+score+'</b></p>'+
+    '<div class="btns"><button class="primary" onclick="newGame()">🔄 再玩一局</button>'+
+    '<button onclick="showMenu()">🏠 返回主菜单</button></div>';
+  $('overlay').className='';
+}
+function showMenu(){
+  state='menu';paused=false;
+  bpOpen=false;panelInfo=null;panelSurv=null;panelChest=null;buildPanelOpen=false;
+  try{$('bpanel').className='hidden';$('infopanel').className='hidden';$('buildpanel').className='hidden';$('chestpanel').className='hidden';}catch(e){}
+  const has=hasSave();
+  $('panel').innerHTML=
+    '<h1>🧟 废土家园</h1>'+
+    '<p style="text-align:center;color:#9fb4c8">丧尸末日 · 模拟经营 + 塔防 + 开放世界探索</p>'+
+    '<p style="text-align:center">白天种田建厂、探索废墟；<b style="color:#ff9f6a">夜晚尸潮围城</b>，用围墙、陷阱与哨戒塔守住家园核心。'+
+    '采集资源 → 熔炉炼金属 → 造子弹养炮塔；摧毁 4 个丧尸巢穴并活过当晚即可获胜。</p>'+
+    '<h2>🎮 操作</h2>'+
+    '<ul>'+
+    '<li><kbd>WASD</kbd>/方向键 移动 · <kbd>Shift</kbd> 奔跑</li>'+
+    '<li><kbd>鼠标左键</kbd> 射击（无弹药自动近战）· <kbd>空格</kbd>/<kbd>右键</kbd> 近战</li>'+
+    '<li><kbd>E</kbd> 采集/种植/搜刮/救援/开关门 · 按住连续采集</li>'+
+    '<li><kbd>点击</kbd> 建筑查看信息（修补/拆除/种植/睡觉/开箱）</li>'+
+    '<li><kbd>点击</kbd> 幸存者下达指令：🌾采集 / 🛡️守卫 / 🚶跟随</li>'+
+    '<li><kbd>B</kbd> 背包 · <kbd>1-9</kbd> 快捷建筑 · <kbd>R</kbd> 拆除 · <kbd>F</kbd> 绷带 · <kbd>T</kbd> 双倍速 · <kbd>P</kbd> 暂停</li>'+
+    '</ul>'+
+    '<h2>💡 生存要点</h2>'+
+    '<ul>'+
+    '<li>白天没有丧尸：放心采集、种田、建厂、探索；夜晚尸潮沿最短路径进攻。</li>'+
+    '<li>用围墙摆出走廊，把丧尸引到尖刺陷阱和炮塔射程里；丧尸不会破坏树木。</li>'+
+    '<li>所有物资与武器都在背包（B键）：没子弹时自动近战，可装备砍刀/棒球棍。</li>'+
+    '<li>熔炉自动消耗 1石头+1木头 产出金属；金属合成子弹，哨戒塔消耗弹药自动开火。</li>'+
+    '<li>小镇废墟里有物资箱与可招募幸存者；巢穴被摧毁后永久降低尸潮规模。</li>'+
+    '</ul>'+
+    '<div class="btns">'+
+    '<button class="primary" onclick="newGame()">🎮 新游戏</button>'+
+    (has?'<button onclick="continueGame()">💾 继续游戏</button>':'')+
+    '<button onclick="showHelp()">❓ 帮助</button>'+
+    '</div>';
+  $('overlay').className='';
+}
+function continueGame(){
+  if(loadGame()){
+    $('overlay').className='hidden';
+    state='play';paused=false;
+    startT=0;gameT=0;lastT=performance.now();
+    distTimer=0;
+    addMsg('💾 读取存档成功。');
+  }else{
+    $('panel').innerHTML='<h1>读取失败</h1><p>存档损坏或不存在。</p><div class="btns"><button onclick="showMenu()">返回</button></div>';
+  }
+}
+function showHelp(){
+  if(state==='play')paused=true;
+  $('panel').innerHTML=
+    '<h1>❓ 帮助与进阶</h1>'+
+    '<h2>核心循环</h2><p>白天（100秒）→ 无丧尸，探索/采集/建造/生产；夜晚（70秒）→ 尸潮进攻，黎明尸潮退去并自动存档。</p>'+
+    '<h2>生产链</h2>'+
+    '<ul><li>🌲树木 → 木材；🪨岩石 → 石头；废墟废料 → 金属</li>'+
+    '<li>⚙️熔炉：1石头+1木头 → 1金属（8秒/个）</li>'+
+    '<li>🔫金属×1 → 子弹×5；子弹供玩家与哨戒塔共用</li>'+
+    '<li>🌱农田：播种45秒成熟 → 收获 2食物+1种子；1食物 → 2种子</li>'+
+    '<li>🩹2食物 → 绷带（回30血）；🏏3木材 → 棒球棍</li></ul>'+
+    '<h2>背包与武器</h2>'+
+    '<ul><li>所有物资、武器、装备都存放在背包里（B键打开），点击物品即可使用/装备。</li>'+
+    '<li>手枪（远程，消耗弹药）；砍刀（近战25）；棒球棍（近战18）；空手伤害8。</li>'+
+    '<li>弹药耗尽时按住左键会自动近战攻击。</li></ul>'+
+    '<h2>建筑与基地</h2>'+
+    '<ul><li>点击任意建筑可查看信息：🔧修补、🧨拆除；农田可种植/收获/查看生长进度。</li>'+
+    '<li>🛏️床（3木）：夜晚点击睡觉，缓慢回血；🚪门（2木）：E键开/关，关闭时挡丧尸；📦箱子（4木）：24格储物。</li>'+
+    '<li>丧尸视野内会优先攻击主角和幸存者，其次才是基地。</li></ul>'+
+    '<h2>幸存者指令</h2>'+
+    '<ul><li>🌾采集：白天自动砍树挖矿搜刮，晚上把物品存入最近的箱子，然后找床睡觉。</li>'+
+    '<li>🛡️守卫：白天睡觉，晚上在基地周围巡逻，发现丧尸主动出击。</li>'+
+    '<li>🚶跟随：跟在你身边战斗。寻路会绕开障碍物并自动打开路上的门。</li></ul>'+
+    '<h2>防御思路</h2>'+
+    '<ul><li>丧尸只会攻击挡路的建筑，先用木墙在核心周围留出单向入口。</li>'+
+    '<li>入口铺尖刺陷阱（40耐久，丧尸踩过掉血），两侧放哨戒塔交叉火力。</li>'+
+    '<li>胖子（第3天起）血量高、拆墙快，优先集火；奔跑者速度快，别被偷家。</li>'+
+    '<li>巢穴只在夜晚刷丧尸，越早摧毁越安全。</li></ul>'+
+    '<h2>扩展方向</h2>'+
+    '<p>本作是单文件垂直切片：可继续扩展幸存者分工、电力/自动化产线、载具、地下城与多结局剧情。</p>'+
+    '<div class="btns"><button onclick="showMenu()">返回</button></div>';
+  $('overlay').className='';
+}
+function boot(){
+  ctx.imageSmoothingEnabled=false;
+  initUI();
+  canvas.addEventListener('contextmenu',e=>e.preventDefault());
+  window.addEventListener('mousedown',onMouseDown);
+  window.addEventListener('mouseup',onMouseUp);
+  window.addEventListener('mousemove',onMouseMove);
+  window.addEventListener('keydown',onKeyDown);
+  window.addEventListener('keyup',onKeyUp);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='play')paused=true;});
+  showMenu();
+  lastT=performance.now();
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(frame);
+}
+boot();
+</script>
+</body>
+</html>
